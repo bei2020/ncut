@@ -1,4 +1,6 @@
 # ncut instance segmentation
+### original mobile phone photo
+![receipt](img6_centered_d3.png)
 
 ### recuresive 2 way partition
 ```
