@@ -21,6 +21,7 @@ if __name__=="__main__":
     l2=im[:,:,2]
     l2=l2-np.mean(l2)
     # down sample, max pool l times
+    # b=0,1...width_down_sample, j_im=4b,4b+2
     for layer in range(l):
         h,wid=l2.shape
         l2=l2[::2,::2][:h//4*2,:wid//4*2]
@@ -35,11 +36,11 @@ if __name__=="__main__":
     ax2.imshow(l2)
     plt.show()
 
-    l2n=l2/255
+    l2=l2/255
     I,J=l2.shape
     N=I*J
-    l=np.arange(N).reshape(l2n.shape)
-    L,D=img_lap(l2n)
+    l=np.arange(N).reshape(l2.shape)
+    L,D=img_lap(l2)
     w,v=eigs(L,k=8,M=D,which='SM')
     with open('img%d_centered_d3_sparseidx_eigs8'%im_no,'wb') as f:
         np.save(f,w)
@@ -52,10 +53,10 @@ if __name__=="__main__":
     w=w.astype(np.float)
     v=v.astype(np.float)
     print('2nd SM eig %f'% w[0])
-    v1=v[:,0].astype(np.float).reshape(I,J)
-    seg1=v1>0
+    e1=v[:,0].astype(np.float).reshape(I,J)
+    seg1=e1>0
     ax=plt.subplot(2,2,1)
-    plt.imshow(np.multiply(seg1,v1))
+    plt.imshow(np.multiply(seg1,e1))
     plt.colorbar(orientation='horizontal')
     ax.set_title('w:%f, 1st seg>0'%w[0])
     # ax2=plt.subplot(1,2,2)
@@ -86,4 +87,5 @@ if __name__=="__main__":
         ax.set_title('w:%f, %d seg>0'%(w[sm_idx],d+2))
         plt.colorbar(orientation='horizontal')
     plt.show()
+    im=None
 
