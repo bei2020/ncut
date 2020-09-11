@@ -30,10 +30,12 @@ if __name__=="__main__":
         l2=np.max(l2,axis=1)
         l2=np.max(l2,axis=2)
         print(l2.shape)
-    ax1=plt.subplot(1,2,1)
-    ax2=plt.subplot(1,2,2)
-    ax1.imshow(im[:,:,2])
-    ax2.imshow(l2)
+    ax=plt.subplot(1,2,1)
+    ax.imshow(im[:,:,2])
+    ax.set_title('origin image 3rd channel')
+    ax=plt.subplot(1,2,2)
+    ax.imshow(l2)
+    ax.set_title('down sample rate 4')
     plt.show()
 
     l2=l2/255

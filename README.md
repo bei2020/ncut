@@ -5,7 +5,7 @@
 
 ![sample3p](sample3parts.png)
 
-### original mobile phone photo
+## mobile phone photo segmentation
 ![receipt](img6_centered_d3.png)
 
 ### recuresive 2 way partition
