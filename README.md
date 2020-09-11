@@ -1,4 +1,10 @@
 # ncut instance segmentation
+
+## ncut of 2 partitions and 3 partitions
+![sample2p](sample2parts.png)
+
+![sample3p](sample3parts.png)
+
 ### original mobile phone photo
 ![receipt](img6_centered_d3.png)
 

@@ -89,8 +89,7 @@ def segimg_lap(seg,img, emin=1e-6):
     L=D-W
     return L,D
 
-if __name__=="__main__":
-    # 2 partition image
+def sample2part_seg():
     white=0.2* np.random.randn(20, 5)+1
     white[white>1]=2-white[white>1]
     black=abs(0.2* np.random.randn(20, 15))
@@ -109,11 +108,20 @@ if __name__=="__main__":
     e1=e1.astype(np.float)
     e2=v[:,1].reshape(I,J)
     e2=e2.astype(np.float)
-    ax1=plt.subplot(1,2,1)
-    ax2=plt.subplot(1,2,2)
-    ax1.imshow(e1,cmap='gray')
-    ax2.imshow(e2,cmap='gray')
+    ax=plt.subplot(1,3,1)
+    ax.imshow(im,cmap='gray')
+    ax.set_title('2 components image')
+    ax=plt.subplot(1,3,2)
+    ax.imshow(e1,cmap='gray')
+    ax.set_title('1st eigen vector, eigen value w:%f'%w[0])
+    ax=plt.subplot(1,3,3)
+    ax.imshow(e2,cmap='gray')
+    ax.set_title('2nd eigen vector, eigen value w:%f'%w[1])
     plt.show()
+
+if __name__=="__main__":
+    # 2 partition image
+    # sample2part_seg()
 
     # 3 partition image
     nx,ny=(20,20)
@@ -132,26 +140,27 @@ if __name__=="__main__":
     im[ms]+=np.random.randn(im[ms].shape[0])*0.1
 
     im_c=im-np.mean(im)
-    ax1=plt.subplot(1,2,1)
-    ax2=plt.subplot(1,2,2)
-    ax1.imshow(im,cmap='gray')
-    ax2.imshow(im_c,cmap='gray')
+    # ax1=plt.subplot(2,2,1)
+    # ax1.imshow(im,cmap='gray')
+    ax2=plt.subplot(2,2,1)
+    plt.imshow(im_c,cmap='gray')
     ax2.set_title('centered image')
-    plt.show()
+    plt.colorbar(orientation='horizontal')
+    # plt.show()
     I,J=im_c.shape
     N=I*J
     l=np.arange(N).reshape(im_c.shape)
     L,D=img_lap(im_c)
     w,v=eigs(L,k=2,M=D,which='SM')
-    with open('test/tri_centered_SMeigs2','wb') as f:
-        np.save(f,w)
-        np.save(f,v)
+    # with open('test/tri_centered_SMeigs2','wb') as f:
+    #     np.save(f,w)
+    #     np.save(f,v)
     with open('test/tri_centered_SMeigs2','rb') as f:
         w=np.load(f)
         v= np.load(f)
     e1=v[:,0].reshape(I,J).astype(np.float)
     seg1=e1>0
-    ax1=plt.subplot(1,2,1)
+    ax1=plt.subplot(2,2,2)
     plt.imshow(np.multiply(seg1, e1),cmap='gray')
     ax1.set_title('w:%f, 1st seg>0'%w[0])
     plt.colorbar(orientation='horizontal')
@@ -159,33 +168,39 @@ if __name__=="__main__":
     # recursive 2 way cut
     L,D=segimg_lap(seg1,im_c)
     w,v=eigs(L,k=2,M=D,which='SM')
-    with open('test/tri_2nd_SMeigs2','wb') as f:
-        np.save(f,w)
-        np.save(f,v)
+    # with open('test/tri_2nd_SMeigs2','wb') as f:
+    #     np.save(f,w)
+    #     np.save(f,v)
+    with open('test/tri_2nd_SMeigs2','rb') as f:
+        w=np.load(f)
+        v= np.load(f)
     e11=np.zeros(N)
     e11[l[seg1]]=v[:,0].astype(np.float)
     e11=e11.reshape(I,J)
     seg11=e11>0
-    ax1=plt.subplot(1,2,1)
-    plt.imshow(e11,cmap='gray')
-    plt.colorbar(orientation='horizontal')
-    ax2=plt.subplot(1,2,2)
+    # ax1=plt.subplot(1,2,1)
+    # plt.imshow(e11,cmap='gray')
+    # plt.colorbar(orientation='horizontal')
+    ax2=plt.subplot(2,2,3)
     plt.imshow(np.multiply(seg11,e11),cmap='gray')
     ax2.set_title('w:%f, 2nd seg>0'%w[0])
     plt.colorbar(orientation='horizontal')
-    plt.show()
+    # plt.show()
 
     seg1=np.logical_not(seg1)
     L,D=segimg_lap(seg1,im_c)
     w,v=eigs(L,k=2,M=D,which='SM')
-    with open('test/tri_2ndn_SMeigs2','wb') as f:
-        np.save(f,w)
-        np.save(f,v)
+    # with open('test/tri_2ndn_SMeigs2','wb') as f:
+    #     np.save(f,w)
+    #     np.save(f,v)
+    with open('test/tri_2ndn_SMeigs2','rb') as f:
+        w=np.load(f)
+        v= np.load(f)
     e11=np.zeros(N)
     e11[l[seg1]]=v[:,0].astype(np.float)
     e11=e11.reshape(I,J)
     seg11=e11>0
-    ax2=plt.subplot(1,2,2)
+    ax2=plt.subplot(2,2,4)
     plt.imshow(np.multiply(seg11,e11),cmap='gray')
     ax2.set_title('w:%f, 2nd seg<0'%w[0])
     plt.colorbar(orientation='horizontal')

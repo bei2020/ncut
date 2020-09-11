@@ -66,7 +66,7 @@ if __name__=="__main__":
     # recursive 2 way cut
     depth=3
     for d in range(0,depth):
-        L,D=segimg_lap(seg1,l2n)
+        L,D=segimg_lap(seg1,l2)
         w,v=eigs(L,k=2,M=D,which='SM')
         with open('img%d_%d_SMeigs2'%(im_no,d+2),'wb') as f:
             np.save(f,w)
