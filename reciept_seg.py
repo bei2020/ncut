@@ -89,5 +89,3 @@ if __name__=="__main__":
         ax.set_title('w:%f, %d seg>0'%(w[sm_idx],d+2))
         plt.colorbar(orientation='horizontal')
     plt.show()
-    im=None
-
