@@ -53,13 +53,16 @@ if __name__=="__main__":
     im_flist=os.listdir(data_path)
     im_no=1
     ims=mpimg.imread(os.path.join(data_path,im_flist[im_no]))
-    im=ims[:,:,2]
+    # im=ims[:,:,2]
+    im=ims[:,:,2][100:300,:300]
 
 
-    num_iter=50
+    num_iter=100
     option=1
     delta_t=1/7
-    # ad=anisodiff2D(im,num_iter,delta_t,option)
+    ad=anisodiff2D(im,num_iter,delta_t,option)
+    # ad=im/np.max(im)
+
     # ax=plt.subplot(121)
     # plt.imshow(im,cmap='Blues')
     # plt.colorbar(orientation='horizontal')
@@ -72,7 +75,6 @@ if __name__=="__main__":
     # with open('test/%s_ad_iter50_1'%im_flist[im_no],'rb') as f:
     #     ad=np.load(f)
 
-    ad=im/np.max(im)
     h,w=im.shape
     pim=np.concatenate((ad[:1,:],ad,ad[-1:,:]),axis=0)
     pim=np.concatenate((pim[:,:1],pim,pim[:,-1:]),axis=1)
@@ -81,45 +83,46 @@ if __name__=="__main__":
     grad_IN=np.vstack((np.zeros(w).reshape(1,w),-grad_IS[:-1,:]))
     grad_IW=np.hstack((np.zeros(h).reshape(h,1),-grad_IE[:,:-1]))
     # print(np.mean(abs(grad_IS)))
-    kappaS=np.mean(abs(grad_IS))
-    kappaE=np.mean(abs(grad_IE))
-    cS=flux_coeffecient(abs(grad_IS),kappaS,option)
-    cE=flux_coeffecient(abs(grad_IE),kappaE,option)
-    cN=flux_coeffecient(abs(grad_IN),kappaS,option)
-    cW=flux_coeffecient(abs(grad_IW),kappaE,option)
-    # 1,2: E,S
-    edgm=1e-2
-    gm2=cS < edgm
-    gm1=cE < edgm
     I,J=im.shape
     N=I*J
     l=np.arange(N).reshape(I,J)
+
+    # laplacian matrix of edge pixels
+    nbin=30
+    hist,bx=np.histogram(abs(grad_IS).flatten(),bins=nbin)
+    gradm2=8*np.dot(hist,bx[:-1])/np.sum(hist)
+    hist,bx=np.histogram(abs(grad_IE).flatten(),bins=nbin)
+    gradm1=8*np.dot(hist,bx[:-1])/np.sum(hist)
+    gm2=abs(grad_IS)>gradm2
+    gm1=abs(grad_IE)>gradm1
+    # 1,2: E,S
     w1i=l[gm1]
     w1si=l[:-1,][gm1[:-1,]]
     w1di=l[1:,1:][gm1[:-1,:-1]]
-    w1e=(cE[gm1]>edgm).astype('int')
-    w1s=(cS[:-1,:][gm1[:-1,:]]>edgm).astype('int')
-    w1n=(cN[1:,1:][gm1[:-1,:-1]]>edgm).astype('int')
-    w1w=(cW[1:,1:][gm1[:-1,:-1]]>edgm).astype('int')
+    w1e=np.zeros(w1i.shape[0])
+    w1s=(abs(grad_IS)[:-1,:][gm1[:-1,:]]<gradm1).astype('int')
+    w1n=(abs(grad_IN)[1:,1:][gm1[:-1,:-1]]<gradm1).astype('int')
+    w1w=(abs(grad_IW)[1:,1:][gm1[:-1,:-1]]<gradm1).astype('int')
     w2i=l[gm2]
     w2ei=l[:,:-1][gm2[:,:-1]]
     w2di=l[1:,1:][gm2[:-1,:-1]]
-    w2e=(cE[:,:-1][gm2[:,:-1]]>edgm).astype('int')
-    w2s=(cS[gm2]>edgm).astype('int')
-    w2n=(cN[1:,1:][gm2[:-1,:-1]]>edgm).astype('int')
-    w2w=(cW[1:,1:][gm2[:-1,:-1]]>edgm).astype('int')
+    w2e=(abs(grad_IE)[:,:-1][gm2[:,:-1]]<gradm2).astype('int')
+    w2s=np.zeros(w2i.shape[0])
+    w2n=(abs(grad_IN)[1:,1:][gm2[:-1,:-1]]<gradm2).astype('int')
+    w2w=(abs(grad_IW)[1:,1:][gm2[:-1,:-1]]<gradm2).astype('int')
     gm1n=np.hstack((np.zeros((I,1)),gm1[:,:-1])).astype('bool')
     gm2n=np.vstack((np.zeros((1,J)),gm2[:-1,])).astype('bool')
     w1nni=l[1:,:][gm1n[1:,:]]
     w1ndi=l[:-1,:-1][gm1n[1:,1:]]
-    w1nn=(cN[1:,:][gm1n[1:,:]]>edgm).astype('int')
-    w1ne=(cE[:-1,:-1][gm1n[1:,1:]]>edgm).astype('int')
-    w1ns=(cS[:-1,:-1][gm1n[1:,1:]]>edgm).astype('int')
+    w1nn=(abs(grad_IN)[1:,:][gm1n[1:,:]]<gradm1).astype('int')
+    w1ne=(abs(grad_IE)[:-1,:-1][gm1n[1:,1:]]<gradm1).astype('int')
+    w1ns=(abs(grad_IS)[:-1,:-1][gm1n[1:,1:]]<gradm1).astype('int')
     w2nwi=l[:,1:][gm2n[:,1:]]
     w2ndi=l[:-1,:-1][gm2n[1:,1:]]
-    w2nw=(cW[:,1:][gm2n[:,1:]]>edgm).astype('int')
-    w2ne=(cE[:-1,:-1][gm2n[1:,1:]]>edgm).astype('int')
-    w2ns=(cS[:-1,:-1][gm2n[1:,1:]]>edgm).astype('int')
+    w2nw=(abs(grad_IW)[:,1:][gm2n[:,1:]]<gradm2).astype('int')
+    w2ne=(abs(grad_IE)[:-1,:-1][gm2n[1:,1:]]<gradm2).astype('int')
+    w2ns=(abs(grad_IS)[:-1,:-1][gm2n[1:,1:]]<gradm2).astype('int')
+
     wi=np.concatenate((w1i,w1si,w1di,w1di,w2ei,w2i,w2di,w2di,w1nni,w1ndi,w1ndi,w2nwi,w2ndi,w2ndi))
     wj=np.concatenate((w1i+1,w1si+J,w1di-J,w1di-1,w2ei+1,w2i+J,w2di-J,w2di-1,w1nni-J,w1ndi+1,w1ndi+J,w2nwi-1,w2ndi+1,w2ndi+J))
     we=np.concatenate((w1e,w1s,w1n,w1w,w2e,w2s,w2n,w2w,w1nn,w1ne,w1ns,w2nw,w2ne,w2ns))

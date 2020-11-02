@@ -20,3 +20,6 @@ python recipt_seg.py
 ![3part edge seg](imgs/sample3parts_edge_seg.png)
 
 ![receipt edge seg](imgs/rece0_edgep.png)
+
+## edge detection
+![zero crossing](imgs/reci2-2_Dog_sig2_minmax1.png)
