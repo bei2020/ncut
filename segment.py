@@ -3,17 +3,6 @@ import numpy as np
 from scipy.sparse.linalg import eigs
 from scipy.sparse import csr_matrix
 
-def distance(m,n):
-    """Return distance of two pixels m and n base on intensity.
-    m,n: both are intensity.
-    """
-    dis= abs(m-n)
-    return dis
-
-def pixel_no(i,j):
-    """location in flatten img"""
-    return 20*i+j
-
 def plot_eigs(w,v,shape=None):
     nump=min(len(w),7)
     for i in range(len(w)):

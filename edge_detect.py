@@ -194,10 +194,9 @@ if __name__=="__main__":
     im_flist = os.listdir(data_path)
     im_no = 1
     ims = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
-    # im=ims[:,:,2]
-    im = ims[:, :, 2][:1000, :1000]
+    im=ims[100:300,:300,2]
 
-    im=im/np.max(im)
+    im=im/np.sum(im)
     I, J = im.shape
 
     nint=2
@@ -240,10 +239,11 @@ if __name__=="__main__":
         ax.set_title('edge pixels, sigma=2')
         plt.colorbar(orientation='horizontal')
         ax=plt.subplot(122)
-        plt.imshow(ims[:1000, :1000],cmap='Blues')
+        # plt.imshow(ims[100:300,:300],cmap='Blues')
+        plt.imshow(Dq[0],cmap='Blues')
         ax.set_title('sample')
         plt.colorbar(orientation='horizontal')
         plt.show()
 
-    # plot_imgs(Dq)
+    # plot_imgs(Lsig)
     # plot_imgs(D)

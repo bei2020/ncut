@@ -9,7 +9,7 @@ import os
 
 def flux_coeffecient(grad,kappa,option):
     if option==1:
-        c=np.exp(-grad/kappa)
+        c=np.exp(-(grad/kappa)**2)
     elif option==2:
         c=1/(1+grad/kappa)
     else:
@@ -18,32 +18,32 @@ def flux_coeffecient(grad,kappa,option):
     return c
 
 def anisodiff2D(im,num_iter,delta_t,option,kappaS=.4,kappaE=.4):
-    diff_im=im
+    nbin=30
     dy=1
     dx=1
     h,w=im.shape
     for n in range(num_iter):
-        pim=np.concatenate((diff_im[:1,:],diff_im,diff_im[-1:,:]),axis=0)
+        pim=np.concatenate((im[:1,:],im,im[-1:,:]),axis=0)
         pim=np.concatenate((pim[:,:1],pim,pim[:,-1:]),axis=1)
         grad_IS= -pim[-1-h:-1,1:1+w]+pim[-h:,1:1+w]
         grad_IE= -pim[1:1+h,-1-w:-1]+pim[1:1+h,-w:]
-        # print(np.mean(abs(grad_IS)))
         grad_IN=np.vstack((np.zeros(w).reshape(1,w),-grad_IS[:-1,:]))
         grad_IW=np.hstack((np.zeros(h).reshape(h,1),-grad_IE[:,:-1]))
-        kappaS=1.5*np.mean(abs(grad_IS))
-        kappaE=1.5*np.mean(abs(grad_IE))
+        hist,bx=np.histogram(abs(grad_IS).flatten(),bins=nbin)
+        kappaS=4*np.dot(hist,bx[:-1])/np.sum(hist)
+        hist,bx=np.histogram(abs(grad_IE).flatten(),bins=nbin)
+        kappaE=4*np.dot(hist,bx[:-1])/np.sum(hist)
         cS=flux_coeffecient(abs(grad_IS),kappaS,option)
         cE=flux_coeffecient(abs(grad_IE),kappaE,option)
         cN=flux_coeffecient(abs(grad_IN),kappaS,option)
         cW=flux_coeffecient(abs(grad_IW),kappaE,option)
-        diff_im=diff_im+delta_t*((1/dy)*(cN*grad_IN+cS*grad_IS)
+        im=im+delta_t*((1/dy)*(cN*grad_IN+cS*grad_IS)
                                  +(1/dx)*(cW*grad_IW+cE*grad_IE)
                                  )
-        diff_im[diff_im<0]=0
-        diff_im/=np.max(diff_im)
-        # print('iter %d, kappa %.2f %.2f %.2f %.2f'%(n,kappaE,kappaS))
+        im=im/np.sum(im)
+        # print('iter %d, kappa %.2f %.2f'%(n,kappaE,kappaS))
     # print(pbS)
-    return diff_im
+    return im
 
 if __name__=="__main__":
     # with open('imgs/tri_part','rb') as f:
@@ -53,15 +53,13 @@ if __name__=="__main__":
     im_flist=os.listdir(data_path)
     im_no=1
     ims=mpimg.imread(os.path.join(data_path,im_flist[im_no]))
-    # im=ims[:,:,2]
-    im=ims[:,:,2][100:300,:300]
-
+    im=ims[100:300,:300,2]
+    im=im/np.sum(im)
 
     num_iter=100
     option=1
     delta_t=1/7
     ad=anisodiff2D(im,num_iter,delta_t,option)
-    # ad=im/np.max(im)
 
     # ax=plt.subplot(121)
     # plt.imshow(im,cmap='Blues')
@@ -82,7 +80,6 @@ if __name__=="__main__":
     grad_IE= -pim[1:1+h,-1-w:-1]+pim[1:1+h,-w:]
     grad_IN=np.vstack((np.zeros(w).reshape(1,w),-grad_IS[:-1,:]))
     grad_IW=np.hstack((np.zeros(h).reshape(h,1),-grad_IE[:,:-1]))
-    # print(np.mean(abs(grad_IS)))
     I,J=im.shape
     N=I*J
     l=np.arange(N).reshape(I,J)
@@ -90,9 +87,9 @@ if __name__=="__main__":
     # laplacian matrix of edge pixels
     nbin=30
     hist,bx=np.histogram(abs(grad_IS).flatten(),bins=nbin)
-    gradm2=8*np.dot(hist,bx[:-1])/np.sum(hist)
+    gradm2=10*np.dot(hist,bx[:-1])/np.sum(hist)
     hist,bx=np.histogram(abs(grad_IE).flatten(),bins=nbin)
-    gradm1=8*np.dot(hist,bx[:-1])/np.sum(hist)
+    gradm1=10*np.dot(hist,bx[:-1])/np.sum(hist)
     gm2=abs(grad_IS)>gradm2
     gm1=abs(grad_IE)>gradm1
     # 1,2: E,S
@@ -124,6 +121,19 @@ if __name__=="__main__":
     w2ns=(abs(grad_IS)[:-1,:-1][gm2n[1:,1:]]<gradm2).astype('int')
 
     wi=np.concatenate((w1i,w1si,w1di,w1di,w2ei,w2i,w2di,w2di,w1nni,w1ndi,w1ndi,w2nwi,w2ndi,w2ndi))
+    ax=plt.subplot(131)
+    plt.imshow(ad,cmap='gray')
+    plt.colorbar(orientation='horizontal')
+    ax=plt.subplot(132)
+    plt.imshow(im,cmap='gray')
+    plt.colorbar(orientation='horizontal')
+    ax=plt.subplot(133)
+    plt.imshow(((gm1.astype('int')+gm2.astype('int')+gm1n+gm2n)>0).astype('int'),cmap='gray')
+    ax.set_title('edge pixels')
+    plt.colorbar(orientation='horizontal')
+    plt.show()
+    import sys
+    sys.exit()
     wj=np.concatenate((w1i+1,w1si+J,w1di-J,w1di-1,w2ei+1,w2i+J,w2di-J,w2di-1,w1nni-J,w1ndi+1,w1ndi+J,w2nwi-1,w2ndi+1,w2ndi+J))
     we=np.concatenate((w1e,w1s,w1n,w1w,w2e,w2s,w2n,w2w,w1nn,w1ne,w1ns,w2nw,w2ne,w2ns))
     W=csr_matrix((we,(wi,wj)),shape=(N,N)).toarray()
