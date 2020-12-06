@@ -45,6 +45,18 @@ def anisodiff2D(im,num_iter,delta_t,option,kappaS=.4,kappaE=.4):
     # print(pbS)
     return im
 
+def plot_chan(im,nc=3):
+    for i in range(nc):
+        ax=plt.subplot(1,nc+1,i+1)
+        plt.imshow(im[:,:,i],cmap='gray')
+        ax.set_title('channel:%d'%(i+1))
+        plt.colorbar(orientation='horizontal')
+    ax=plt.subplot(1,nc+1,nc+1)
+    plt.imshow(im)
+    ax.set_title('prob img')
+    plt.colorbar(orientation='horizontal')
+    plt.show()
+
 if __name__=="__main__":
     # with open('imgs/tri_part','rb') as f:
     #     ims=np.load(f)
@@ -54,7 +66,6 @@ if __name__=="__main__":
     im_no=1
     ims=mpimg.imread(os.path.join(data_path,im_flist[im_no]))
     im=ims[100:300,:300,2]
-    im=im/np.sum(im)
 
     num_iter=100
     option=1

@@ -23,3 +23,6 @@ python recipt_seg.py
 
 ## edge detection
 ![zero crossing](imgs/reci2-2_Dog_sig2_minmax1.png)
+
+## pixel label
+![label](imgs/tri_label.png)
