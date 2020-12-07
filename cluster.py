@@ -7,30 +7,30 @@ import os
 
 def msimg(img,ssig=1,rsig=.1,niter=100):
     """Return image of center values."""
-    I,J=img.shape
+    I,J,K=img.shape
     sigr = 3
-    D=img.shape[2] if len(img.shape)==3 else 1
+    D=img.shape[2]
     a=rsig**2/(D+2)
     x = np.arange(ssig * sigr + 1).astype('int')
     v=np.zeros((img.shape))
     gamma=.9
     # 1234:ESWN
     for i in range(niter):
-        Io = np.stack( (np.concatenate(((img[:, 1:]+gamma*v[:,1:]), np.zeros(I).reshape(I, 1)), 1),
-                        np.concatenate(((img[1:, :]+gamma*v[1:,:]), np.zeros(J).reshape(1, J))),
-                        np.concatenate((np.zeros(I).reshape(I,1),(img[:,:-1])+gamma*v[:,:-1]),1),
-                        np.concatenate((np.zeros(J).reshape(1,J),(img[:-1,:]+gamma*v[:-1,:]))),
+        Io = np.stack( (np.concatenate(((img[:, 1:,:]+gamma*v[:,1:,:]), np.zeros(I*K).reshape((I,1,K))), 1),
+                        np.concatenate(((img[1:, :,:]+gamma*v[1:,:,:]), np.zeros(J*K).reshape((1, J,K)))),
+                        np.concatenate((np.zeros(I*K).reshape((I,1,K)),(img[:,:-1,:])+gamma*v[:,:-1,:]),1),
+                        np.concatenate((np.zeros(J*K).reshape((1,J,K)),(img[:-1,:,:]+gamma*v[:-1,:,:]))),
                         ))
         for s in x[2:]:
             Io=np.vstack( (Io,
-                           np.concatenate((img[:, s:]+gamma*v[:,s:], np.zeros(I*s).reshape(I, s)), 1).reshape(1,I,J),
-                           np.concatenate((img[s:, :]+gamma*v[s:,:], np.zeros(J*s).reshape(s, J))).reshape(1,I,J),
-                           np.concatenate((np.zeros(I*s).reshape(I,s),img[:,:-s]+gamma*v[:,:-s]),1).reshape(1,I,J),
-                           np.concatenate((np.zeros(J*s).reshape(s,J),img[:-s,:]+gamma*v[:-s,:])).reshape(1,I,J),
+                           np.concatenate((img[:, s:,:]+gamma*v[:,s:,:], np.zeros(I*s*K).reshape((I, s,K))), 1).reshape((1,I,J,K)),
+                           np.concatenate((img[s:, :,:]+gamma*v[s:,:,:], np.zeros(J*s*K).reshape((s, J,K)))).reshape((1,I,J,K)),
+                           np.concatenate((np.zeros(I*s*K).reshape((I,s,K)),img[:,:-s,:]+gamma*v[:,:-s,:]),1).reshape((1,I,J,K)),
+                           np.concatenate((np.zeros(J*s*K).reshape((s,J,K)),img[:-s,:,:]+gamma*v[:-s,:,:])).reshape((1,I,J,K)),
                            )
                           )
-        wt=edge_weight(Io-(img.reshape(1,I,J)+gamma*v),rsig)
-        Io = np.sum(np.multiply(Io,wt/np.sum(wt,0).reshape((1,I,J))),0)
+        wt=edge_weight(Io-(img+gamma*v).reshape(1,I,J,K),rsig)
+        Io = np.sum(np.multiply(Io,wt/np.sum(wt,0).reshape((1,I,J,K))),0)
         v=gamma*v+a*(Io-(img+gamma*v))
         img+=v
     return img
@@ -57,27 +57,30 @@ if __name__=="__main__":
     with open('imgs/tri_part','rb') as f:
         im=np.load(f)
     ig=im/np.sum(im)
-    ig=np.log(ig)
+    ig=np.log(ig).reshape((*im.shape,1))
     # data_path=os.path.join( os.getcwd(),'photos')
     # im_flist=os.listdir(data_path)
     # im_no=1
     # im=mpimg.imread(os.path.join(data_path,im_flist[im_no]))
-    # im=im[100:150,50:100,2]
-    # ig=im/np.sum(im)
-    # ig[ig==0]=.0000001/np.sum(im)
+    # im=im[100:150,50:100,:]
+    # ime=np.einsum('ijk->k', im).reshape(1,1,im.shape[2])
+    # ig=im/ime
+    # ig[ig==0]=.0000001/np.sum(ime)
     # ig=np.log(ig)
 
-    h,w=ig.shape
     ig=msimg(ig,niter=1000,rsig=.2)
-    conti_iter(ig,mcont=6,rsig=.2)
+    conti_iter(ig,mcont=4,rsig=.2)
     labels =(np.round(np.exp(ig)/np.sum(np.exp(ig))*np.sum(im), 1) * 10).astype('int')
+    labels=labels[:,:,0]
+    # labels =(np.round(np.exp(ig)/np.sum(np.exp(ig))*ime, 1)).astype('int')
 
     ax=plt.subplot(121)
-    plt.imshow(im,cmap='gray')
+    # plt.imshow(im,cmap='gray')
+    plt.imshow(im)
     ax.set_title('sample')
     plt.colorbar(orientation='horizontal')
     ax=plt.subplot(122)
-    plt.imshow(labels,cmap='gray')
+    plt.imshow(labels)
     ax.set_title('labels')
     plt.colorbar(orientation='horizontal')
     plt.show()
