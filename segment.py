@@ -16,8 +16,7 @@ def sparse_w(mtrx, emin=1e-6):
     return  np.multiply(mtrx>emin,mtrx)
 
 def edge_weight(intensity_diff,sig=0.2):
-    """intensity_diff: DHWC"""
-    return np.exp(-np.einsum('ijkl,ijkl->ijk',intensity_diff,intensity_diff)/sig**2)
+    return np.exp(-np.sum(intensity_diff**2,-1)/sig**2)
 
 def img_lap(img):
     #13: E,S

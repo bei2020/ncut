@@ -26,3 +26,4 @@ python recipt_seg.py
 
 ## pixel label
 ![label](imgs/tri_label.png)
+![label](imgs/reci_label.png)
