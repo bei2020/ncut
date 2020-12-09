@@ -65,8 +65,7 @@ if __name__=="__main__":
     im_flist=os.listdir(data_path)
     im_no=1
     im=mpimg.imread(os.path.join(data_path,im_flist[im_no]))
-    # im=im[100:200,50:300,:]
-    im=im[110:160,160:260,:]
+    im=im[100:200,50:300,:]
     ime=np.einsum('ijk->k', im.astype('uint32')).reshape(1,1,im.shape[2])
     ig=im/ime
     ig[ig==0]=.0000001/np.sum(ime)
@@ -88,8 +87,7 @@ if __name__=="__main__":
     ax.set_title('sample')
     plt.colorbar(orientation='horizontal')
     ax=plt.subplot(122)
-    # plt.imshow(labels[:,:,0])
-    plt.imshow(labels)
-    ax.set_title('.1.15.2.3 8000')
+    plt.imshow(labels[:,:,0])
+    ax.set_title('.05.08.1.15.2.3  8000')
     plt.colorbar(orientation='horizontal')
     plt.show()
