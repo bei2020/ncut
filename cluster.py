@@ -65,14 +65,19 @@ if __name__=="__main__":
     im_flist=os.listdir(data_path)
     im_no=1
     im=mpimg.imread(os.path.join(data_path,im_flist[im_no]))
-    im=im[100:200,50:300,:]
+    # im=im[100:200,50:300,:]
+    im=im[110:160,160:260,:]
     ime=np.einsum('ijk->k', im.astype('uint32')).reshape(1,1,im.shape[2])
     ig=im/ime
     ig[ig==0]=.0000001/np.sum(ime)
     ig=np.log(ig)
 
-    ig=msimg(ig,niter=1000,rsig=.1)
-    conti_iter(ig,mcont=1,rsig=.1)
+    ig=msimg(ig,niter=8000,rsig=.05)
+    conti_iter(ig,mcont=8,rsig=.08)
+    conti_iter(ig,mcont=8,rsig=.1)
+    conti_iter(ig,mcont=8,rsig=.15)
+    conti_iter(ig,mcont=8,rsig=.2)
+    conti_iter(ig,mcont=8,rsig=.3)
     # labels =(np.round(np.exp(ig)/np.sum(np.exp(ig))*np.sum(im), 1) * 10).astype('int')
     # labels=labels[:,:,0]
     labels =(np.round(np.exp(ig)/np.einsum('ijk->k', np.exp(ig)).reshape(1,1,ig.shape[2])*ime, 1)).astype(im.dtype)
@@ -85,6 +90,6 @@ if __name__=="__main__":
     ax=plt.subplot(122)
     # plt.imshow(labels[:,:,0])
     plt.imshow(labels)
-    ax.set_title('labels')
+    ax.set_title('.1.15.2.3 8000')
     plt.colorbar(orientation='horizontal')
     plt.show()

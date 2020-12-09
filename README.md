@@ -25,5 +25,5 @@ python recipt_seg.py
 ![zero crossing](imgs/reci2-2_Dog_sig2_minmax1.png)
 
 ## pixel label
-![label](imgs/tri_label.png)
 ![label](imgs/reci_label.png)
+![label](imgs/reci_label_.05.08.1.2.3_8000.png)
