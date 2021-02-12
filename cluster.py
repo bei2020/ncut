@@ -6,7 +6,7 @@ import copy
 import os
 
 def msimg(img,ssig=1,rsig=.1,mcont=5):
-    """Return image assigned center values."""
+    """Return image with center values."""
     I,J,K=img.shape
     D=img.shape[2]
     a=rsig**2/(D+2)
@@ -125,28 +125,34 @@ def msimg(img,ssig=1,rsig=.1,mcont=5):
     return img
 
 if __name__=="__main__":
-    with open('imgs/tri_part','rb') as f:
-        im=np.load(f)
-    iph=im/np.sum(im)
-    iph=np.log(iph).reshape((*im.shape,1))
+    # with open('imgs/tri_part','rb') as f:
+    #     im=np.load(f)
+    # iph=im/np.sum(im)
+    # iph=np.log(iph).reshape((*im.shape,1))
 
-    # data_path=os.path.join( os.getcwd(),'photos')
-    # im_flist=os.listdir(data_path)
-    # im_no=1
-    # im=mpimg.imread(os.path.join(data_path,im_flist[im_no]))
-    # im=im[100:150,50:110,:]
-    # ime=np.einsum('ijk->k', im.astype('uint32')).reshape(1,1,im.shape[2])
-    # iph=im/ime
-    # iph[iph==0]=.0000001/np.sum(ime)
-    # iph=np.log(iph)
+    data_path=os.path.join( os.getcwd(),'photos')
+    im_flist=os.listdir(data_path)
+    im_no=0
+    im=mpimg.imread(os.path.join(data_path,im_flist[im_no]))
+    # im=im[110:150,140:190,:]
+    im=im[40:60,10:50,:]
+    ime=np.einsum('ijk->k', im.astype('uint32')).reshape(1,1,im.shape[2])
+    iph=im/ime
+    iph[iph==0]=.0000001/np.sum(ime)
+    iph=np.log(iph)
 
     I,J,K=iph.shape
     gloc=[0,0]
-    floc=(I-1,J-1)
+    l=np.arange(I*J).reshape(I,J)
+    iph[gloc[0],gloc[1],:]=-np.inf
+    fidx=np.stack([l]*K,axis=2)[iph==np.max(iph)][0]
+    floc=[fidx//J,fidx%J]
     ig=msimg(copy.deepcopy(iph),rsig=.08,mcont=6)
 
     blabels=np.zeros((I,J,6))
-    prob = 1 / (1 + np.exp(-ig[:,:,-1]))
+    mct=np.einsum('ijk->k',ig==np.max(ig,-1).reshape(I,J,1).astype('int'))
+    ch=np.arange(K)[mct==np.max(mct)][0]
+    prob = 1 / (1 + np.exp(-ig[:,:,ch]))
     blabels[:,:,0] = (prob > np.random.rand(*prob.shape)).astype('int')
 
     ax=plt.subplot(231)
@@ -154,7 +160,7 @@ if __name__=="__main__":
     ax.set_title('sample')
     plt.colorbar(orientation='horizontal')
     ax=plt.subplot(232)
-    plt.imshow(ig[:,:,0])
+    plt.imshow(ig[:,:,ch])
     ax.set_title('iph1')
     plt.colorbar(orientation='horizontal')
     ax=plt.subplot(233)
@@ -162,11 +168,27 @@ if __name__=="__main__":
     ax.set_title('seg1 .08 6000')
     plt.colorbar(orientation='horizontal')
 
-    iph[np.sum(blabels,-1).astype('bool').reshape(I, J, 1)] = 0
-    floc=(0,J-1)
-    ig=msimg(copy.deepcopy(iph),rsig=.08,mcont=6)
-    ig[np.sum(blabels,-1).astype('bool').reshape(I, J, 1)] = -np.inf
-    prob = 1 / (1 + np.exp(-ig[:,:,-1]))
+    cmsk=np.sum(blabels,-1).astype('bool') # cut nodes mask
+    fidx=np.stack([l]*K,axis=2)[im==np.max(im[np.logical_not(cmsk)])][0]
+    floc=[fidx//J,fidx%J]
+    if floc[0]!=I-1 & floc[0]!=0 & floc[1]!=J-1 & floc[1]!=0:
+        sqm=np.logical_not(cmsk)[floc[0]-1:floc[0]+2,floc[1]-1:floc[1]+2].flatten().tolist()
+        sqm=np.array([*sqm[:4],*sqm[5:]])
+        sql=np.array([(floc[0]-1,floc[1]-1),(floc[0]-1,floc[1]),(floc[0]-1,floc[1]+1),(floc[0],floc[1]-1),(floc[0],floc[1]+1),(floc[0]+1,floc[1]-1),(floc[0]+1,floc[1]),(floc[0]+1,floc[1]+1)])[sqm]
+        sq=iph[:,:,ch][floc[0]-1:floc[0]+2,floc[1]-1:floc[1]+2]
+        sq=sq.flatten().tolist()
+        sq=np.array([*sq[:4],*sq[5:]])[sqm]
+        sq=sq<sq[0]
+        if np.sum(sq.astype('int'))==0:
+            floc=sql[1]
+        else:
+            floc=sql[sq][0]
+    iph[cmsk] = 0
+    ig=msimg(copy.deepcopy(iph),rsig=.1,mcont=6)
+    ig[cmsk] = -np.inf
+    mct=np.einsum('ijk->k',ig==np.max(ig,-1).reshape(I,J,1).astype('int'))
+    ch=np.arange(K)[mct==np.max(mct)][0]
+    prob = 1 / (1 + np.exp(-ig[:,:,ch]))
     blabels[:,:,1] = (prob > np.random.rand(*prob.shape)).astype('int')
 
     ax=plt.subplot(234)
@@ -175,13 +197,27 @@ if __name__=="__main__":
     plt.colorbar(orientation='horizontal')
     ax=plt.subplot(235)
     plt.imshow(blabels[:,:,1])
-    ax.set_title('seg01 .08 6000')
+    ax.set_title('seg01 .1 6000')
     plt.colorbar(orientation='horizontal')
 
-    iph[np.sum(blabels,-1).astype('bool').reshape(I, J, 1)] = 0
-    floc=(I-1,0)
-    ig=msimg(copy.deepcopy(iph),rsig=.1,mcont=6)
-    ig[np.sum(blabels,-1).astype('bool').reshape(I, J, 1)] = -np.inf
+    cmsk=np.sum(blabels,-1).astype('bool')
+    fidx=np.stack([l]*K,axis=2)[im==np.max(im[np.logical_not(cmsk)])][0]
+    floc=(fidx//J,fidx%J)
+    if floc[0]!=I-1 & floc[0]!=0 & floc[1]!=J-1 & floc[1]!=0:
+        sqm=np.logical_not(cmsk)[floc[0]-1:floc[0]+2,floc[1]-1:floc[1]+2].flatten().tolist()
+        sqm=np.array([*sqm[:4],*sqm[5:]])
+        sql=np.array([(floc[0]-1,floc[1]-1),(floc[0]-1,floc[1]),(floc[0]-1,floc[1]+1),(floc[0],floc[1]-1),(floc[0],floc[1]+1),(floc[0]+1,floc[1]-1),(floc[0]+1,floc[1]),(floc[0]+1,floc[1]+1)])[sqm]
+        sq=iph[floc[0]-1:floc[0]+2,floc[1]-1:floc[1]+2]
+        sq=sq.flatten().tolist()
+        sq=np.array([*sq[:4],*sq[5:]])[sqm]
+        sq=sq<sq[0]
+        if np.sum(sq.astype('int'))==0:
+            floc=sql[1]
+        else:
+            floc=sql[sq][0]
+    iph[cmsk] = 0
+    ig=msimg(copy.deepcopy(iph),rsig=.3,mcont=4)
+    ig[cmsk] = -np.inf
     prob = 1 / (1 + np.exp(-ig[:,:,-1]))
     blabels[:,:,2] = (prob > np.random.rand(*prob.shape)).astype('int')
 
