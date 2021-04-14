@@ -58,14 +58,14 @@ def plot_chan(im,nc=3):
     plt.show()
 
 if __name__=="__main__":
-    # with open('imgs/tri_part','rb') as f:
-    #     ims=np.load(f)
-    # im=ims
-    data_path=os.path.join( os.getcwd(),'photos')
-    im_flist=os.listdir(data_path)
-    im_no=1
-    ims=mpimg.imread(os.path.join(data_path,im_flist[im_no]))
-    im=ims[100:300,:300,2]
+    with open('imgs/tri_part','rb') as f:
+        ims=np.load(f)
+    im=ims
+    # data_path=os.path.join( os.getcwd(),'photos')
+    # im_flist=os.listdir(data_path)
+    # im_no=1
+    # ims=mpimg.imread(os.path.join(data_path,im_flist[im_no]))
+    # im=ims[100:300,:300,2]
 
     num_iter=100
     option=1
@@ -105,7 +105,7 @@ if __name__=="__main__":
     gm1=abs(grad_IE)>gradm1
     # 1,2: E,S
     w1i=l[gm1]
-    w1si=l[:-1,][gm1[:-1,]]
+    w1si=l[gm1][:-1,]
     w1di=l[1:,1:][gm1[:-1,:-1]]
     w1e=np.zeros(w1i.shape[0])
     w1s=(abs(grad_IS)[:-1,:][gm1[:-1,:]]<gradm1).astype('int')
@@ -131,22 +131,25 @@ if __name__=="__main__":
     w2ne=(abs(grad_IE)[:-1,:-1][gm2n[1:,1:]]<gradm2).astype('int')
     w2ns=(abs(grad_IS)[:-1,:-1][gm2n[1:,1:]]<gradm2).astype('int')
 
-    wi=np.concatenate((w1i,w1si,w1di,w1di,w2ei,w2i,w2di,w2di,w1nni,w1ndi,w1ndi,w2nwi,w2ndi,w2ndi))
-    ax=plt.subplot(131)
-    plt.imshow(ad,cmap='gray')
-    plt.colorbar(orientation='horizontal')
-    ax=plt.subplot(132)
-    plt.imshow(im,cmap='gray')
-    plt.colorbar(orientation='horizontal')
-    ax=plt.subplot(133)
-    plt.imshow(((gm1.astype('int')+gm2.astype('int')+gm1n+gm2n)>0).astype('int'),cmap='gray')
-    ax.set_title('edge pixels')
-    plt.colorbar(orientation='horizontal')
+    # wi=np.concatenate((w1i,w1si,w1di,w1di,w2ei,w2i,w2di,w2di,w1nni,w1ndi,w1ndi,w2nwi,w2ndi,w2ndi))
+    wi=np.concatenate((w1i,w1si,w1di,w1di,w2ei,w2i,w2di,w2di,w1nni,w1ndi,w1ndi))
+    # ax=plt.subplot(131)
+    # plt.imshow(ad,cmap='gray')
+    # plt.colorbar(orientation='horizontal')
+    # ax=plt.subplot(132)
+    # plt.imshow(im,cmap='gray')
+    # plt.colorbar(orientation='horizontal')
+    # ax=plt.subplot(133)
+    # plt.imshow(((gm1.astype('int')+gm2.astype('int')+gm1n+gm2n)>0).astype('int'),cmap='gray')
+    # ax.set_title('edge pixels')
+    # plt.colorbar(orientation='horizontal')
     plt.show()
-    import sys
-    sys.exit()
-    wj=np.concatenate((w1i+1,w1si+J,w1di-J,w1di-1,w2ei+1,w2i+J,w2di-J,w2di-1,w1nni-J,w1ndi+1,w1ndi+J,w2nwi-1,w2ndi+1,w2ndi+J))
-    we=np.concatenate((w1e,w1s,w1n,w1w,w2e,w2s,w2n,w2w,w1nn,w1ne,w1ns,w2nw,w2ne,w2ns))
+    # import sys
+    # sys.exit()
+    wj=np.concatenate((w1i+1,w1si+J,w1di-J,w1di-1,w2ei+1,w2i+J,w2di-J,w2di-1,w1nni-J,w1ndi+1,w1ndi+J))
+    we=np.concatenate((w1e,w1s,w1n,w1w,w2e,w2s,w2n,w2w,w1nn,w1ne,w1ns))
+    # wj=np.concatenate((w1i+1,w1si+J,w1di-J,w1di-1,w2ei+1,w2i+J,w2di-J,w2di-1,w1nni-J,w1ndi+1,w1ndi+J,w2nwi-1,w2ndi+1,w2ndi+J))
+    # we=np.concatenate((w1e,w1s,w1n,w1w,w2e,w2s,w2n,w2w,w1nn,w1ne,w1ns,w2nw,w2ne,w2ns))
     W=csr_matrix((we,(wi,wj)),shape=(N,N)).toarray()
     W=W+W.T
     row0=np.sum(abs(W),1)

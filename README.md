@@ -27,6 +27,6 @@ python recipt_seg.py
 ## pixel label
 ![label](imgs/reci_label.png)
 ![label](imgs/reci_label_.05.08.1.2.3_8000.png)
-### ncut
-![label](imgs/butt-blabel.png)
-
+## ncut
+cluster.py
+![denoise](imgs/butt_denoise.png)
