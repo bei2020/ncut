@@ -7,16 +7,13 @@
 
 ![sample3p](imgs/sample3parts.png)
 
-## mobile phone photo segmentation
-![receipt](imgs/img6_centered_d3.png)
-
 ### recuresive 2 way partition
 ```
 python recipt_seg.py
 ```
 ![recuresive 2 way partition](imgs/img6_d3_ncut.png)
 
-## edge line segmentation
+## edge segmentation
 ``` python anisodiff2D.py ```
 
 ![3part edge seg](imgs/sample3parts_edge_seg.png)
@@ -39,3 +36,4 @@ python recipt_seg.py
 1. Jianbo Shi and J. Malik. Normalized cuts and image segmentation. IEEE Transactions on Pattern Analysis.
 2. Yizong Cheng. Mean shift, mode seeking, and clustering. IEEE transactions on pattern analysis and machine
 intelligence, 17(8):790–799, 1995.
+3. Lowe D G. Distinctive image features from scale-invariant keypoints[J]. International journal of computer vision, 2004, 60(2): 91-110.
