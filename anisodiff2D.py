@@ -1,3 +1,5 @@
+"""Ref: P. Perona and J. Malik, "Scale-space and edge detection using anisotropic diffusion," in IEEE Transactions on Pattern Analysis and Machine Intelligence, vol. 12, no. 7, pp. 629-639, July 1990, doi: 10.1109/34.56205."""
+
 import numpy as np
 import matplotlib.image as mpimg
 import logging

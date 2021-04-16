@@ -1,4 +1,5 @@
 # coding: utf-8
+"""Ref: Lowe D G. Distinctive image features from scale-invariant keypoints[J]. International journal of computer vision, 2004, 60(2): 91-110."""
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.image as mpimg

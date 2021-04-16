@@ -1,6 +1,8 @@
 # ncut instance segmentation
 
 ## ncut of 2 partitions and 3 partitions
+`segment.py`
+
 ![sample2p](imgs/sample2parts.png)
 
 ![sample3p](imgs/sample3parts.png)
@@ -28,5 +30,12 @@ python recipt_seg.py
 ![label](imgs/reci_label.png)
 ![label](imgs/reci_label_.05.08.1.2.3_8000.png)
 ## ncut
-cluster.py
+`cluster.py`
+
 ![denoise](imgs/butt_denoise.png)
+
+## Ref
+
+1. Jianbo Shi and J. Malik. Normalized cuts and image segmentation. IEEE Transactions on Pattern Analysis.
+2. Yizong Cheng. Mean shift, mode seeking, and clustering. IEEE transactions on pattern analysis and machine
+intelligence, 17(8):790–799, 1995.

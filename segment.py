@@ -202,31 +202,31 @@ if __name__=="__main__":
     # 2 partition image
     # sample2part_seg()
     # 3 partition image
-    # sample3part_seg()
+    sample3part_seg()
 
-    with open('imgs/tri_part','rb') as f:
-        im=np.load(f)
-    # ax=plt.subplot(2,2,1)
-    # plt.imshow(im,cmap='gray')
+    # with open('imgs/tri_part','rb') as f:
+    #     im=np.load(f)
+    # # ax=plt.subplot(2,2,1)
+    # # plt.imshow(im,cmap='gray')
+    # # ax.set_title('centered image')
+    # # plt.colorbar(orientation='horizontal')
+    # # plt.show()
+    # I,J=im.shape
+    # N=I*J
+    # l=np.arange(N).reshape(im.shape)
+    # L,D=img_lap(im)
+    # w,v=eigs(L,k=1,M=D,which='SM')
+    # # with open('test/tri_centered_SMeigs4_lap3d','wb') as f:
+    # #     np.save(f,w)
+    # #     np.save(f,v)
+    # # with open('test/tri_centered_SMeigs5','rb') as f:
+    # #     w=np.load(f)
+    # #     v= np.load(f)
+    # w=w.astype(np.float)
+    # v=v.astype(np.float)
+    # plot_eigs(w,v,shape=im.shape)
+    # ax=plt.subplot(2,4,8)
+    # plt.imshow(im)
     # ax.set_title('centered image')
     # plt.colorbar(orientation='horizontal')
     # plt.show()
-    I,J=im.shape
-    N=I*J
-    l=np.arange(N).reshape(im.shape)
-    L,D=img_lap(im)
-    w,v=eigs(L,k=1,M=D,which='SM')
-    # with open('test/tri_centered_SMeigs4_lap3d','wb') as f:
-    #     np.save(f,w)
-    #     np.save(f,v)
-    # with open('test/tri_centered_SMeigs5','rb') as f:
-    #     w=np.load(f)
-    #     v= np.load(f)
-    w=w.astype(np.float)
-    v=v.astype(np.float)
-    plot_eigs(w,v,shape=im.shape)
-    ax=plt.subplot(2,4,8)
-    plt.imshow(im)
-    ax.set_title('centered image')
-    plt.colorbar(orientation='horizontal')
-    plt.show()
