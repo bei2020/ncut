@@ -16,7 +16,7 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     gamma = .9
     alpha = .99
     lamb = 1e-5
-    v = np.zeros((I+2,J+2,K))
+    v = np.zeros((I+2,J+2))
     Vp = 0
     if init_wt == 1:
         nint = 2
@@ -76,21 +76,10 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         cur = Iok - Io
         fn = 'wt_rsig%f_%s' % (rsig, fn)
         with open('%s.npy' % fn, 'wb') as f:
-            np.save(f, np.hstack((w_E,w_S,w_SE,w_NE)))
-
-            # gloc=np.argmin(di[1:-1,1:-1])
-            # gloc = (gloc // (J - 2) + 1, gloc % (J - 2) + 1)
-            # print('gloc %d %d'%(gloc[0],gloc[1]))
-            # floc=np.argmin(wt[:,gloc[0],gloc[1]])
-            # floc=(gloc[0]+lij[floc][0],gloc[1]+lij[floc][1])
-            # print('floc %d %d'%(floc[0],floc[1]))
-            # fi = np.zeros((I,J,K))
-            # fi[floc[0],floc[1],:] = 1
-            # fi[gloc[0],gloc[1],:] = -1
-            # img[gloc[0],gloc[1],:]=0
+            np.save(f, np.stack((w_E,w_S,w_SE,w_NE)))
     else:
-        fn = 'wt_rsig%f_%s' % (rsig, fn)
         a = rsig ** 2 / (K + 2)
+        fn = 'wt_rsig%f_%s' % (rsig, fn)
         with open('%s.npy' % fn, 'rb') as f:
             wt = np.load(f)
         w_E,w_S,w_SE,w_NE=wt
@@ -98,25 +87,116 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         w_N = np.vstack((np.zeros((1, J)), w_S[:-1, :,]))
         w_NW = np.hstack((np.zeros((I, 1)),np.vstack((np.zeros((1, J - 1)), w_SE[:-1,:-1]))))
         w_SW = np.hstack((np.zeros((I, 1)), np.vstack((w_NE[1:,:-1], np.zeros((1, J - 1))))))
+        di=np.sum(np.stack((w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW),0),0)
 
-    def msiter(niter=1000):
-        nonlocal pim, v, Vp, w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW, cur
-        # wt[:,gloc[0],gloc[1]]=0
-        # wt[:,floc[0],floc[1]]=0
+    gloc=np.argmin(di[1:-1,1:-1])
+    gloc = (gloc // (J - 2) + 1, gloc % (J - 2) + 1)
+    print('gloc %d %d'%(gloc[0],gloc[1]))
+    floc=np.argmin(np.stack((w_E,w_S,w_SE,w_NE))[:,gloc[0],gloc[1]])
+    floc=(gloc[0]+lij[floc][0],gloc[1]+lij[floc][1])
+    print('floc %d %d'%(floc[0],floc[1]))
+    pim= np.zeros((I+2,J+2))
+    pim[floc[0]+1,floc[1]+1] = 1
+    pim[gloc[0]+1,gloc[1]+1] = -1
+
+    for w in (w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW):
+        w[gloc[0],gloc[1]]=0
+        w[floc[0],floc[1]]=0
+
+    def ms_seq(niter=1):
+        """Return binary img."""
+        nonlocal pim,  w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,gloc,floc,di
+        gc=((gloc[0],floc[0])[gloc[0]>floc[0]],(gloc[1],floc[1])[gloc[1]>floc[1]])
+        print('top left loc of gf %d %d'%(gc[0],gc[1]))
+        Io = (np.multiply(w_E, pim[1:-1, 2:]) + np.multiply(w_S, pim[2:, 1:-1]) + np.multiply(w_W, pim[1:-1, :J]) \
+              + np.multiply( w_N, pim[:I, 1:-1]) + np.multiply(w_SE, pim[2:, 2:]) + np.multiply(w_NE, pim[:I, 2:]) \
+              + np.multiply( w_NW, pim[:I, :J]) + np.multiply(w_SW, pim[2:, :J]))/di
+        gp = Io - pim[1:-1,1:-1]
+        Io= np.zeros((I,J))
+        Io[floc[0],floc[1]] = 1
+        Io[gloc[0],gloc[1]] = -1
+        im=copy.deepcopy(Io)
+        Io[gc[0]:gc[0]+2,gc[1]:gc[1]+2] = np.tanh(gp/rsig)[gc[0]:gc[0]+2,gc[1]:gc[1]+2]
+        Io[floc[0],floc[1]] = 1
+        Io[gloc[0],gloc[1]] = -1
+        ax = plt.subplot(111)
+        plt.imshow(Io)
+        ax.set_title('pim')
+        plt.colorbar(orientation='horizontal')
+        plt.show()
+        for n in range(niter):
+            c=[*gc]#-->
+            while c[1]<J-1:
+                Io[c[0],c[1]+1]=(w_W[c[0],c[1]+1]*Io[tuple(c)]+w_SW[c[0],c[1]+1]*Io[c[0]+1,c[1]])/di[c[0],c[1]+1]
+                Io[c[0]+1,c[1]+1]=(w_W[c[0]+1,c[1]+1]*Io[c[0]+1,c[1]]+w_NW[c[0]+1,c[1]+1]*Io[tuple(c)]+w_N[c[0]+1,c[1]+1]*Io[c[0],c[1]+1])/di[c[0]+1,c[1]+1]
+                c[1]+=1
+            c=[gc[0]+1,gc[1]]
+            while c[0]<I-1:
+                Io[c[0]+1,c[1]]=(w_N[c[0]+1,c[1]]*Io[tuple(c)]+w_NE[c[0]+1,c[1]]*Io[c[0],c[1]+1])/di[c[0]+1,c[1]]
+                while c[1]<J-1:
+                    Io[c[0]+1,c[1]+1]=(w_W[c[0]+1,c[1]+1]*Io[c[0]+1,c[1]]+w_NW[c[0]+1,c[1]+1]*Io[tuple(c)]+w_N[c[0]+1,c[1]+1]*Io[c[0],c[1]+1])/di[c[0]+1,c[1]+1]
+                    c[1]+=1
+                c[0]+=1
+                c[1]=gc[1]
+            c=[*gc]
+            while c[0]>0:
+                Io[c[0]-1,c[1]]=(w_S[c[0]-1,c[1]]*Io[tuple(c)]+w_SE[c[0]-1,c[1]]*Io[c[0],c[1]+1])/di[c[0]-1,c[1]]
+                while c[1]<J-1:
+                    Io[c[0]-1,c[1]+1]=(w_W[c[0]-1,c[1]+1]*Io[c[0]-1,c[1]]+w_SW[c[0]-1,c[1]+1]*Io[tuple(c)]+w_S[c[0]-1,c[1]+1]*Io[c[0],c[1]+1])/di[c[0]-1,c[1]+1]
+                    c[1]+=1
+                c[0]-=1
+                c[1]=gc[1]
+            c=[*gc]#<--
+            while c[1]>0:
+                Io[c[0],c[1]-1]=(w_E[c[0],c[1]-1]*Io[tuple(c)]+w_SE[c[0],c[1]-1]*Io[c[0]+1,c[1]])/di[c[0],c[1]-1]
+                Io[c[0]+1,c[1]-1]=(w_E[c[0]+1,c[1]-1]*Io[c[0]+1,c[1]]+w_NE[c[0]+1,c[1]-1]*Io[tuple(c)]+w_N[c[0]+1,c[1]-1]*Io[c[0],c[1]-1])/di[c[0]+1,c[1]-1]
+                c[1]-=1
+            c=[gc[0]+1,gc[1]]
+            while c[0]<I-1:
+                Io[c[0]+1,c[1]]=(w_N[c[0]+1,c[1]]*Io[tuple(c)]+w_NW[c[0]+1,c[1]]*Io[c[0],c[1]-1])/di[c[0]+1,c[1]]
+                while c[1]>0:
+                    Io[c[0]+1,c[1]-1]=(w_E[c[0]+1,c[1]-1]*Io[c[0]+1,c[1]]+w_NE[c[0]+1,c[1]-1]*Io[tuple(c)]+w_N[c[0]+1,c[1]-1]*Io[c[0],c[1]-1])/di[c[0]+1,c[1]-1]
+                    c[1]-=1
+                c[0]+=1
+                c[1]=gc[1]
+            c=[*gc]
+            while c[0]>0:
+                Io[c[0]-1,c[1]]=(w_S[c[0]-1,c[1]]*Io[tuple(c)]+w_SW[c[0]-1,c[1]]*Io[c[0],c[1]-1])/di[c[0]-1,c[1]]
+                while c[1]>0:
+                    Io[c[0]-1,c[1]-1]=(w_E[c[0]-1,c[1]-1]*Io[c[0]-1,c[1]]+w_SE[c[0]-1,c[1]-1]*Io[tuple(c)]+w_S[c[0]-1,c[1]-1]*Io[c[0],c[1]-1])/di[c[0]-1,c[1]-1]
+                    c[1]-=1
+                c[0]-=1
+                c[1]=gc[1]
+
+            gp = Io - im
+            Io = np.tanh(gp/rsig)
+            Io[floc[0],floc[1]] = 1
+            Io[gloc[0],gloc[1]] = -1
+            im=copy.deepcopy(Io)
+            ax = plt.subplot(111)
+            plt.imshow(Io)
+            ax.set_title('Io')
+            plt.colorbar(orientation='horizontal')
+            plt.show()
+        return Io
+
+    def msiter(niter=1):
+        nonlocal pim, v, Vp, w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW, cur,rsig,di
         for i in range(niter):
-            Io = (np.multiply(w_E.reshape(I,J,1), pim[1:-1, 2:, :]+ gamma * v[1:-1, 2:, :]) + np.multiply(w_S.reshape(I,J,1), pim[2:, 1:-1, :]+ gamma * v[2:, 1:-1, :]) + np.multiply(w_W.reshape(I,J,1), pim[1:-1, :J, :]+ gamma * v[1:-1, :J, :]) \
-                  + np.multiply( w_N.reshape(I,J,1), pim[:I, 1:-1, :]+ gamma * v[:I, 1:-1, :]) + np.multiply(w_SE.reshape(I,J,1), pim[2:, 2:, :]+ gamma * v[2:, 2:, :]) + np.multiply(w_NE.reshape(I,J,1), pim[:I, 2:, :]+ gamma * v[:I, 2:, :]) \
-                  + np.multiply( w_NW.reshape(I,J,1), pim[:I, :J, :]+ gamma * v[:I, :J, :]) + np.multiply(w_SW.reshape(I,J,1), pim[2:, :J, :]+ gamma * v[2:, :J, :]))/di.reshape((I, J, 1))
-            # gp = Io - (img + gamma * v[1:-1,1:-1,:])
-            gp = Io - (pim + gamma * v)[1:-1,1:-1,:]
-            Vp = alpha * Vp + (1 - alpha) * gp ** 2
-            Gp = 1 / (lamb + np.sqrt(Vp))
-            v[1:-1,1:-1,:] = gamma * v[1:-1,1:-1,:] + a * (np.multiply(Gp, gp) + cur)
-            pim += v
-            # c=np.sum(np.multiply(img,di.reshape((I,J,1))),axis=(0,1))
-            # img-=c.reshape((1,1,K))/(I*J)/di.reshape((I,J,1))
-            # c=np.sum(np.multiply(img**2,di.reshape((I,J,1))),axis=(0,1))
-            # img/=(c**(1/2)).reshape((1,1,K))
+            # pim[1:-1,1:-1,:]-=pim[1:-1,1:-1,:][gloc[0],gloc[1],:]
+            Io = (np.multiply(w_E, pim[1:-1, 2:]) + np.multiply(w_S, pim[2:, 1:-1]) + np.multiply(w_W, pim[1:-1, :J]) \
+                  + np.multiply( w_N, pim[:I, 1:-1]) + np.multiply(w_SE, pim[2:, 2:]) + np.multiply(w_NE, pim[:I, 2:]) \
+                  + np.multiply( w_NW, pim[:I, :J]) + np.multiply(w_SW, pim[2:, :J]))/di.reshape((I, J))
+            gp = Io - pim[1:-1,1:-1]
+            # v[1:-1,1:-1] = gamma * v[1:-1,1:-1] + a *  gp
+            pim[1:-1,1:-1] = np.tanh(gp/rsig)
+            pim[floc[0]+1,floc[1]+1] = 1
+            pim[gloc[0]+1,gloc[1]+1] = -1
+        ax = plt.subplot(111)
+        plt.imshow(pim[1:-1,1:-1])
+        ax.set_title('pim')
+        plt.colorbar(orientation='horizontal')
+        plt.show()
 
     def msconti(ncont=0, mcont=12):
         nonlocal pim
@@ -126,28 +206,30 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         # ginf=1e-12
         # if np.sum(np.square((pim-imgc)[1:-1,1:-1,:]))<ginf:
             print('fix found continue iter %d' % (ncont * 1000))
-            print(np.round(pim[:10, :10, 0], 6))
-            print(np.round(v[1:-1, 1:-1, 0], 6))
+            # print(np.round(pim[:10, :10, 0], 6))
+            # print(np.round(v[1:-1, 1:-1, 0], 6))
             # print('ground ',pim[gloc[0],gloc[1],:])
             return
         else:
             if ncont == mcont:
                 print('no fix after continue iter %d' % (ncont * 1000))
-                print(np.round(pim[:10, :10, 0], 6))
-                print(np.round(imgc[:10, :10, 0], 6))
+                # print(np.round(pim[:10, :10, 0], 6))
+                # print(np.round(imgc[:10, :10, 0], 6))
                 # print('ground ',img[gloc[0],gloc[1],:])
                 # print(np.round(np.exp(img[:10,:10,0]), 6))
                 # print(np.round(np.exp(imgc[:10,:10,0]), 6))
                 return
             print('continue')
             ncont += 1
-            msiter(niter=1000)
+            msiter(niter=1)
             msconti(ncont, mcont)
 
-    msiter()
-    msconti(mcont=mcont)
-    return pim[1:-1,1:-1,:]
-    # return img
+    # msiter()
+    # msconti(mcont=mcont)
+    img=ms_seq()
+    # return pim[1:-1,1:-1]
+    # return pim[1:-1,1:-1,:]
+    return img
 
 
 def grad_m(grad):
@@ -169,15 +251,15 @@ def grad_m(grad):
 
 
 if __name__ == "__main__":
-    # lij=((0,1),(1,0),(0,-1),(-1,0),(1,1),(1,-1),(-1,-1),(-1,1))
+    lij=((0,1),(1,0),(0,-1),(-1,0),(1,1),(1,-1),(-1,-1),(-1,1))
 
     with open('imgs/tri_part','rb') as f:
         im=np.load(f)
-    # im=im[8:18,1:11]
+    im=im[4:14,5:15]
     # iph=im.reshape((*im.shape,1))
     iph=(im/np.sum(im)).reshape((*im.shape,1))
-    iph=np.sqrt(iph).reshape((*im.shape,1))
-    # iph=np.log(iph).reshape((*im.shape,1))
+    # iph=-np.log(im/np.sum(im)).reshape((*im.shape,1))
+    # iph=-np.log(iph).reshape((*im.shape,1))
 
     # data_path = os.path.join(os.getcwd(), 'photos')
     # im_flist = os.listdir(data_path)
@@ -193,13 +275,12 @@ if __name__ == "__main__":
 
     I, J, K = iph.shape
     l = np.arange(I * J).reshape(I, J)
-    ig = msimg(iph, mcont=4)
-    # ig=msimg(copy.deepcopy(iph),rsig=.1,mcont=4)
+    # ig = msimg(iph, mcont=4)
+    ig=msimg(copy.deepcopy(iph),mcont=1)
     # ig=msimg(ig,rsig=.08)
 
     # blabels=np.zeros((I,J,6))
     # prob = 1 / (1 + np.exp(-np.sum(np.multiply(ig,iph),axis=2)))
-    # prob = 1 / (1 + np.exp(-ig[:,:,ch]))
     # blabels[:,:,0] = (prob > np.random.rand(*prob.shape)).astype('int')
 
     ax = plt.subplot(231)
@@ -208,8 +289,9 @@ if __name__ == "__main__":
     ax.set_title('sample')
     plt.colorbar(orientation='horizontal')
     ax = plt.subplot(232)
-    plt.imshow(np.square(ig[:,:,0])*np.sum(im))
+    # plt.imshow(np.square(ig[:,:,0])*np.sum(im))
     # plt.imshow(ig[:, :, 0])
+    plt.imshow(ig)
     ax.set_title('ig')
     plt.colorbar(orientation='horizontal')
     # ax=plt.subplot(233)
@@ -231,8 +313,9 @@ if __name__ == "__main__":
     # blabels[:,:,1] = (prob > np.random.rand(*prob.shape)).astype('int')
     #
     # ax=plt.subplot(234)
-    # plt.imshow(ig[:,:,ch])
-    # ax.set_title('ch%d iph01'%ch)
+    # # plt.imshow(ig[:,:,0])
+    # plt.imshow(ig[:,:,0]/np.sum(ig[:,:,0])*np.sum(im))
+    # # ax.set_title('ch%d iph01'%ch)
     # plt.colorbar(orientation='horizontal')
     # ax=plt.subplot(235)
     # plt.imshow(blabels[:,:,1])
