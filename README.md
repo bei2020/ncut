@@ -30,7 +30,8 @@ python recipt_seg.py
 ## ncut with eigensolver Lanczos
 `segment.py`
 
-![lanc](imgs/lanc_pair_iter132_w30_rsig.1.png)
+![lanc](imgs/butt_lanc_pair_iter2000_w30.png)
+![lanc](imgs/rece_lanc_pair_iter2000_w50.png)
 
 ## Ref
 

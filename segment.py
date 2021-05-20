@@ -5,6 +5,7 @@ from scipy.sparse import csr_matrix
 from lanc_eig import eiges
 import os
 import matplotlib.image as mpimg
+from PIL import Image
 
 def plot_eigs(w,v,shape=None,row=2):
     if shape==None:
@@ -26,6 +27,23 @@ def edge_weight(intensity_diff,sig=0.2):
 def edge_weight_g(intensity_diff,sig=0.2):
     return np.exp(-intensity_diff**2/sig**2)
 
+def grad_m(grad):
+    """Return prob mean value of gradient"""
+    h, b = np.histogram(abs(grad).flatten(), bins=20)
+    pk = np.argmax(h)
+    nf = 3
+    ginf = 1e-8
+    vh = [None] * 2
+    vh[0] = np.dot(h[pk:pk + nf], b[1 + pk:1 + pk + nf]) / np.sum(h[pk:pk + nf])
+    vh[1] = np.dot(h[pk:pk + nf + 1], b[1 + pk:2 + pk + nf]) / np.sum(h[pk:pk + nf + 1])
+    for i in range(2, len(h)):
+        v = np.dot(h[pk:pk + nf + i], b[1 + pk:1 + pk + nf + i]) / np.sum(h[pk:pk + nf + i])
+        if (abs(v - vh[1]) < ginf) & (abs(vh[0] + v - 2 * vh[1]) < ginf):
+            break
+        vh[0] = vh[1]
+        vh[1] = v
+    return np.round(v, int(np.ceil(np.log10(1 / v))))
+
 def img_lap(img,rsig=.1):
     #123: E,SE,S
     if len(img.shape)==2:
@@ -37,9 +55,14 @@ def img_lap(img,rsig=.1):
     else:
         I,J,K=img.shape
         N=I*J
-        w1=edge_weight(img[:,:-1]-img[:,1:])
-        w2=edge_weight(img[:-1,:-1]-img[1:,1:])
-        w3=edge_weight(img[:-1,:]-img[1:,])
+        g1=img[:,:-1]-img[:,1:]
+        g2=img[:-1,:-1]-img[1:,1:]
+        g3=img[:-1,:]-img[1:,]
+        rsig = grad_m(np.concatenate((g1.flatten(),g2.flatten(),g3.flatten())))
+        print('rsig %f'%rsig)
+        w1=edge_weight(img[:,:-1]-img[:,1:],rsig)
+        w2=edge_weight(img[:-1,:-1]-img[1:,1:],rsig)
+        w3=edge_weight(img[:-1,:]-img[1:,],rsig)
 
     l=np.arange(I*J).reshape(I,J)
     w1i=l[:,:-1].flatten()
@@ -53,7 +76,7 @@ def img_lap(img,rsig=.1):
     we=np.concatenate((w1.flatten(),w2.flatten(),w3.flatten()))
     W=csr_matrix((we,(wi,wj)),shape=(N,N)).toarray()
 
-    W=sparse_w(W+W.T,1e-6)
+    W=sparse_w(W+W.T,1e-16)
     W/=np.sum(W)
     dmm=np.sum(W,axis=0)
     D=np.diag(dmm)
@@ -214,35 +237,53 @@ if __name__=="__main__":
     # # 3 partition image
     # sample3part_seg()
 
-    with open('imgs/tri_part','rb') as f:
-        im=np.load(f)
-    im=im[4:12,5:10]
+    # with open('imgs/tri_part','rb') as f:
+    #     im=np.load(f)
+    # im=im[4:12,5:10]
     # ax=plt.subplot(2,2,1)
     # plt.imshow(im,cmap='gray')
     # ax.set_title('centered image')
     # plt.colorbar(orientation='horizontal')
     # plt.show()
 
-    I,J=im.shape
+    data_path = os.path.join(os.getcwd(), 'photos')
+    im_flist = os.listdir(data_path)
+    im_no = 2
+    # im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
+    im = Image.open(os.path.join(data_path, im_flist[im_no]))
+    rim = im.resize((np.array(im.size) / 10).astype(int))
+    rim = np.asarray(rim)
+    im = rim[10:22, 10:50,:]
+    # im=im[110:150,140:190,:]
+    # im = im[40:60, 10:50, :]
+    # im = im[40:50, 10:20, :]
+    ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
+    img = im / ime
+
+    if len(im.shape)==2:
+        I,J=im.shape
+    else:
+        I,J,K=im.shape
     N=I*J
     l=np.arange(N).reshape(I,J)
-    L,D=img_lap(im)
+    L,D=img_lap(img)
     d = np.diag(D)
     Ls=np.multiply(np.multiply((d**(-1/2)).reshape(N, 1), L), (d**(-1/2)).reshape(1, N))
-    w,v=eiges(Ls,k=30)
+    w,v=eiges(Ls,k=50)
 
-    # w,v=eigs(L,k=11,M=D,which='SM')
     # with open('test/tri_centered_SMeigs4_lap3d','wb') as f:
     #     np.save(f,w)
     #     np.save(f,v)
     # with open('test/tri_centered_SMeigs5','rb') as f:
     #     w=np.load(f)
     #     v= np.load(f)
+    # w,v=eigs(L,k=11,M=D,which='SM')
     # w=w.astype(np.float)
     # v=v.astype(np.float)
 
-    row=3
-    plot_eigs(w[:11],v[:,:11],shape=(I,J),row=row)
+    row=2
+    # plot_eigs(w[:11],v[:,:11],shape=(I,J),row=row)
+    plot_eigs(w[:7],v[:,:7],shape=(I,J),row=row)
     ax=plt.subplot(row,4,row*4)
     plt.imshow(im)
     ax.set_title('centered image')

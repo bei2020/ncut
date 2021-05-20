@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.image as mpimg
-from segment import edge_weight
+from segment import edge_weight,grad_m
 import copy
 import os
 from time import gmtime, strftime
@@ -148,24 +148,6 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     msconti(mcont=mcont)
     return pim[1:-1,1:-1,:]
     # return img
-
-
-def grad_m(grad):
-    """Return prob mean value of gradient"""
-    h, b = np.histogram(abs(grad).flatten(), bins=20)
-    pk = np.argmax(h)
-    nf = 3
-    ginf = 1e-8
-    vh = [None] * 2
-    vh[0] = np.dot(h[pk:pk + nf], b[1 + pk:1 + pk + nf]) / np.sum(h[pk:pk + nf])
-    vh[1] = np.dot(h[pk:pk + nf + 1], b[1 + pk:2 + pk + nf]) / np.sum(h[pk:pk + nf + 1])
-    for i in range(2, len(h)):
-        v = np.dot(h[pk:pk + nf + i], b[1 + pk:1 + pk + nf + i]) / np.sum(h[pk:pk + nf + i])
-        if (abs(v - vh[1]) < ginf) & (abs(vh[0] + v - 2 * vh[1]) < ginf):
-            break
-        vh[0] = vh[1]
-        vh[1] = v
-    return np.round(v, int(np.ceil(np.log10(1 / v))))
 
 
 if __name__ == "__main__":

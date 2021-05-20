@@ -86,7 +86,7 @@ def eiges(Ls,k=4):
 
     tol=1e-16
     n=T.shape[0]
-    miter=1000
+    miter=2000
     print('total iter%d'%miter)
     q=0
     while (q<n-1) & (miter>0):
