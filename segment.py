@@ -2,13 +2,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.sparse.linalg import eigs
 from scipy.sparse import csr_matrix
+from lanc_eig import eiges
+import os
+import matplotlib.image as mpimg
 
-def plot_eigs(w,v,shape=None):
+def plot_eigs(w,v,shape=None,row=2):
     if shape==None:
         shape=(int(v.shape[0]**(1/2)),int(v.shape[0]**(1/2)))
-    nump=min(len(w),7)
+    # nump=min(len(w),7)
     for i in range(len(w)):
-        ax=plt.subplot(2,4,i+1)
+        ax=plt.subplot(row,4,i+1)
         plt.imshow(v[:,i].reshape(shape))
         ax.set_title('w:%f'%w[i])
         plt.colorbar(orientation='horizontal')
@@ -23,13 +26,20 @@ def edge_weight(intensity_diff,sig=0.2):
 def edge_weight_g(intensity_diff,sig=0.2):
     return np.exp(-intensity_diff**2/sig**2)
 
-def img_lap(img):
+def img_lap(img,rsig=.1):
     #123: E,SE,S
-    I,J=img.shape
-    N=I*J
-    w1=edge_weight_g(img[:,:-1]-img[:,1:])
-    w2=edge_weight_g(img[:-1,:-1]-img[1:,1:])
-    w3=edge_weight_g(img[:-1,:]-img[1:,])
+    if len(img.shape)==2:
+        I,J=img.shape
+        N=I*J
+        w1=edge_weight_g(img[:,:-1]-img[:,1:],rsig)
+        w2=edge_weight_g(img[:-1,:-1]-img[1:,1:],rsig)
+        w3=edge_weight_g(img[:-1,:]-img[1:,],rsig)
+    else:
+        I,J,K=img.shape
+        N=I*J
+        w1=edge_weight(img[:,:-1]-img[:,1:])
+        w2=edge_weight(img[:-1,:-1]-img[1:,1:])
+        w3=edge_weight(img[:-1,:]-img[1:,])
 
     l=np.arange(I*J).reshape(I,J)
     w1i=l[:,:-1].flatten()
@@ -206,26 +216,34 @@ if __name__=="__main__":
 
     with open('imgs/tri_part','rb') as f:
         im=np.load(f)
+    im=im[4:12,5:10]
     # ax=plt.subplot(2,2,1)
     # plt.imshow(im,cmap='gray')
     # ax.set_title('centered image')
     # plt.colorbar(orientation='horizontal')
     # plt.show()
+
     I,J=im.shape
     N=I*J
-    l=np.arange(N).reshape(im.shape)
+    l=np.arange(N).reshape(I,J)
     L,D=img_lap(im)
-    w,v=eigs(L,k=3,M=D,which='SM')
+    d = np.diag(D)
+    Ls=np.multiply(np.multiply((d**(-1/2)).reshape(N, 1), L), (d**(-1/2)).reshape(1, N))
+    w,v=eiges(Ls,k=30)
+
+    # w,v=eigs(L,k=11,M=D,which='SM')
     # with open('test/tri_centered_SMeigs4_lap3d','wb') as f:
     #     np.save(f,w)
     #     np.save(f,v)
     # with open('test/tri_centered_SMeigs5','rb') as f:
     #     w=np.load(f)
     #     v= np.load(f)
-    w=w.astype(np.float)
-    v=v.astype(np.float)
-    plot_eigs(w,v,shape=im.shape)
-    ax=plt.subplot(2,4,8)
+    # w=w.astype(np.float)
+    # v=v.astype(np.float)
+
+    row=3
+    plot_eigs(w[:11],v[:,:11],shape=(I,J),row=row)
+    ax=plt.subplot(row,4,row*4)
     plt.imshow(im)
     ax.set_title('centered image')
     plt.colorbar(orientation='horizontal')
