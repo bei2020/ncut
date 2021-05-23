@@ -2,10 +2,141 @@ import numpy as np
 from matplotlib import pyplot as plt
 import os
 import matplotlib.image as mpimg
-from segment import edge_weight
+from PIL import Image
+from segment import edge_weight,grad_m
 import copy
 from time import gmtime, strftime
+import logging
+FORMAT = '%(asctime)-15s %(message)s'
+logging.basicConfig(format=FORMAT)
+logger = logging.getLogger('ms')
+logger.setLevel('INFO')
 
+def SE_expa(ground_center,Im,w_N,w_NE,w_W,w_NW,di):
+    """gc heat expand in S,E directions"""
+    c=[*ground_center]
+    I,J=Im.shape
+    while (c[0]<I-1) &(c[1]<J-1):
+        # print('SE %d %d'%(c[0],c[1]))
+        Im[c[0]+1,c[1]]+= (w_N[c[0]+1,c[1]]*Im[tuple(c)]+w_NE[c[0]+1,c[1]]*Im[c[0],c[1]+1])/di[c[0]+1,c[1]]
+        while c[1]<J-1:
+            Im[c[0]+1,c[1]+1]+= (w_W[c[0]+1,c[1]+1]*Im[c[0]+1,c[1]]+w_NW[c[0]+1,c[1]+1]*Im[tuple(c)]+w_N[c[0]+1,c[1]+1]*Im[c[0],c[1]+1])/di[c[0]+1,c[1]+1]
+            c[1]+=1
+        c[0]+=1
+        c[1]=ground_center[1]
+
+def NE_expa(ground_center,Im,w_S,w_SE,w_W,w_SW,di):
+    """gc heat expand in N,E directions"""
+    c=[*ground_center]
+    I,J=Im.shape
+    while (c[0]>0) &(c[1]<J-1):
+        # print('NE %d %d'%(c[0],c[1]))
+        Im[c[0]-1,c[1]]+=(w_S[c[0]-1,c[1]]*Im[tuple(c)]+w_SE[c[0]-1,c[1]]*Im[c[0],c[1]+1])/di[c[0]-1,c[1]]
+        while c[1]<J-1:
+            Im[c[0]-1,c[1]+1]+=(w_W[c[0]-1,c[1]+1]*Im[c[0]-1,c[1]]+w_SW[c[0]-1,c[1]+1]*Im[tuple(c)]+w_S[c[0]-1,c[1]+1]*Im[c[0],c[1]+1])/di[c[0]-1,c[1]+1]
+            c[1]+=1
+        c[0]-=1
+        c[1]=ground_center[1]
+
+def SW_expa(ground_center,Im,w_N,w_NW,w_E,w_NE,di):
+    """gc heat expand in S,W directions"""
+    c=[*ground_center]
+    I,J=Im.shape
+    while (c[0]<I-1) &(c[1]>0):
+        # print('SW %d %d'%(c[0],c[1]))
+        Im[c[0]+1,c[1]]+=(w_N[c[0]+1,c[1]]*Im[tuple(c)]+w_NW[c[0]+1,c[1]]*Im[c[0],c[1]-1])/di[c[0]+1,c[1]]
+        while c[1]>0:
+            Im[c[0]+1,c[1]-1]+=(w_E[c[0]+1,c[1]-1]*Im[c[0]+1,c[1]]+w_NE[c[0]+1,c[1]-1]*Im[tuple(c)]+w_N[c[0]+1,c[1]-1]*Im[c[0],c[1]-1])/di[c[0]+1,c[1]-1]
+            c[1]-=1
+        c[0]+=1
+        c[1]=ground_center[1]
+
+def NW_expa(ground_center,Im,w_S,w_SW,w_E,w_SE,di):
+    """gc heat expand in N,W directions"""
+    c=[*ground_center]
+    while (c[0]>0) &(c[1]>0):
+        # print('NW %d %d'%(c[0],c[1]))
+        Im[c[0]-1,c[1]]+=(w_S[c[0]-1,c[1]]*Im[tuple(c)]+w_SW[c[0]-1,c[1]]*Im[c[0],c[1]-1])/di[c[0]-1,c[1]]
+        while c[1]>0:
+            Im[c[0]-1,c[1]-1]+=(w_E[c[0]-1,c[1]-1]*Im[c[0]-1,c[1]]+w_SE[c[0]-1,c[1]-1]*Im[tuple(c)]+w_S[c[0]-1,c[1]-1]*Im[c[0],c[1]-1])/di[c[0]-1,c[1]-1]
+            c[1]-=1
+        c[0]-=1
+        c[1]=ground_center[1]
+
+def heat_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di):
+    """gf square heat expand, top left corner as ground center"""
+    logger.debug('heat center %d %d'%ground_center)
+    dmin=1e-2
+    c=[*ground_center]#-->
+    while c[1]<J-1:
+        Im[c[0],c[1]+1]+=(w_W[c[0],c[1]+1]*Im[tuple(c)]+w_SW[c[0],c[1]+1]*Im[c[0]+1,c[1]])/di[c[0],c[1]+1]
+        Im[c[0]+1,c[1]+1]+=(w_W[c[0]+1,c[1]+1]*Im[c[0]+1,c[1]]+w_NW[c[0]+1,c[1]+1]*Im[tuple(c)]+w_N[c[0]+1,c[1]+1]*Im[c[0],c[1]+1])/di[c[0]+1,c[1]+1]
+        c[1]+=1
+    SE_expa((ground_center[0]+1,ground_center[1]),Im,w_N,w_NE,w_W,w_NW,di)
+    NE_expa(ground_center,Im,w_S,w_SE,w_W,w_SW,di)
+    c=[*ground_center]#<--
+    while c[1]>0:
+        Im[c[0],c[1]-1]+=(w_E[c[0],c[1]-1]*Im[tuple(c)]+w_SE[c[0],c[1]-1]*Im[c[0]+1,c[1]])/di[c[0],c[1]-1]
+        Im[c[0]+1,c[1]-1]+=(w_E[c[0]+1,c[1]-1]*Im[c[0]+1,c[1]]+w_NE[c[0]+1,c[1]-1]*Im[tuple(c)]+w_N[c[0]+1,c[1]-1]*Im[c[0],c[1]-1])/di[c[0]+1,c[1]-1]
+        c[1]-=1
+    SW_expa((ground_center[0]+1,ground_center[1]),Im,w_N,w_NW,w_E,w_NE,di)
+    NW_expa(ground_center,Im,w_S,w_SW,w_E,w_SE,di)
+
+    Im[Im>1]=1
+    Im[Im<-1]=-1
+    Im[(1-Im)<dmin]=1
+    Im[(Im+1)<dmin]=-1
+
+    # ax = plt.subplot(111)
+    # plt.imshow(Im)
+    # ax.set_title('Im')
+    # plt.colorbar(orientation='horizontal')
+    # plt.show()
+
+def split_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di):
+    """Return new ground_center.
+    Find corners with the same heat of g f then heat expand."""
+    logger.debug('split %d %d'%ground_center)
+    c=[*ground_center]
+    c[0]-=np.sum((Im[:c[0],c[1]]==Im[tuple(c)]).astype('int'))
+    c[1]-=np.sum((Im[c[0],:c[1]]==Im[tuple(c)]).astype('int'))
+    gc1=tuple(c)
+    logger.debug('top left gc1 %d %d'%(c[0],c[1]))
+    if (gc1[0]>0) & (gc1[1]>0):
+        Im[c[0]+1,c[1]]+= (w_N[c[0]+1,c[1]]*Im[tuple(c)]+w_NE[c[0]+1,c[1]]*Im[c[0],c[1]+1])/di[c[0]+1,c[1]]
+        Im[c[0]+1,c[1]+1]+= (w_W[c[0]+1,c[1]+1]*Im[c[0]+1,c[1]]+w_NW[c[0]+1,c[1]+1]*Im[tuple(c)]+w_N[c[0]+1,c[1]+1]*Im[c[0],c[1]+1])/di[c[0]+1,c[1]+1]
+        heat_expa(gc1,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
+
+    c=[ground_center[0],ground_center[1]+1]
+    c[0]-=np.sum((Im[:c[0],c[1]]==Im[tuple(c)]).astype('int'))
+    c[1]+=np.sum((Im[c[0],c[1]+1:]==Im[tuple(c)]).astype('int'))
+    gc2=tuple(c)
+    logger.debug('top right gc2 %d %d'%(c[0],c[1]))
+    if (gc2[0]>0) & (gc2[1]<J-1):
+        Im[c[0]+1,c[1]]+=(w_N[c[0]+1,c[1]]*Im[tuple(c)]+w_NW[c[0]+1,c[1]]*Im[c[0],c[1]-1])/di[c[0]+1,c[1]]
+        Im[c[0]+1,c[1]-1]+=(w_E[c[0]+1,c[1]-1]*Im[c[0]+1,c[1]]+w_NE[c[0]+1,c[1]-1]*Im[tuple(c)]+w_N[c[0]+1,c[1]-1]*Im[c[0],c[1]-1])/di[c[0]+1,c[1]-1]
+        heat_expa((gc2[0],gc2[1]-1),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
+
+    c=[ground_center[0]+1,ground_center[1]]
+    c[0]+=np.sum((Im[c[0]+1:,c[1]]==Im[tuple(c)]).astype('int'))
+    c[1]-=np.sum((Im[c[0],:c[1]]==Im[tuple(c)]).astype('int'))
+    gc3=tuple(c)
+    logger.debug('bottom left gc3 %d %d'%(c[0],c[1]))
+    if (gc3[0]<I-1) & (gc3[1]>0):
+        Im[c[0]-1,c[1]]+=(w_S[c[0]-1,c[1]]*Im[tuple(c)]+w_SE[c[0]-1,c[1]]*Im[c[0],c[1]+1])/di[c[0]-1,c[1]]
+        Im[c[0]-1,c[1]+1]+=(w_W[c[0]-1,c[1]+1]*Im[c[0]-1,c[1]]+w_SW[c[0]-1,c[1]+1]*Im[tuple(c)]+w_S[c[0]-1,c[1]+1]*Im[c[0],c[1]+1])/di[c[0]-1,c[1]+1]
+        heat_expa((gc3[0]-1,gc3[1]),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
+
+    c=[ground_center[0]+1,ground_center[1]+1]
+    c[0]+=np.sum((Im[c[0]+1:,c[1]]==Im[tuple(c)]).astype('int'))
+    c[1]+=np.sum((Im[c[0],c[1]+1:]==Im[tuple(c)]).astype('int'))
+    gc4=tuple(c)
+    logger.debug('bottom right gc4 %d %d'%(c[0],c[1]))
+    if (gc4[0]<I-1) & (gc4[1]<J-1):
+        Im[c[0]-1,c[1]]+=(w_S[c[0]-1,c[1]]*Im[tuple(c)]+w_SW[c[0]-1,c[1]]*Im[c[0],c[1]-1])/di[c[0]-1,c[1]]
+        Im[c[0]-1,c[1]-1]+=(w_E[c[0]-1,c[1]-1]*Im[c[0]-1,c[1]]+w_SE[c[0]-1,c[1]-1]*Im[tuple(c)]+w_S[c[0]-1,c[1]-1]*Im[c[0],c[1]-1])/di[c[0]-1,c[1]-1]
+        heat_expa((gc4[0]-1,gc4[1]-1),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
+    return gc1,gc2,gc3,gc4
 
 def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     """Return mean shift image."""
@@ -92,7 +223,7 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     gloc=np.argmin(di[1:-1,1:-1])
     gloc = (gloc // (J - 2) + 1, gloc % (J - 2) + 1)
     print('gloc %d %d'%(gloc[0],gloc[1]))
-    floc=np.argmin(np.stack((w_E,w_S,w_SE,w_NE))[:,gloc[0],gloc[1]])
+    floc=np.argmin(np.stack((w_E,w_S,w_W,w_N,w_SE,w_SW,w_NW,w_NE))[:,gloc[0],gloc[1]])
     floc=(gloc[0]+lij[floc][0],gloc[1]+lij[floc][1])
     print('floc %d %d'%(floc[0],floc[1]))
     pim= np.zeros((I+2,J+2))
@@ -103,9 +234,10 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         w[gloc[0],gloc[1]]=0
         w[floc[0],floc[1]]=0
 
-    def ms_seq(niter=1):
+    def ms_seq():
         """Return binary img."""
         nonlocal pim,  w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,gloc,floc,di
+        # umax=.5
         gc=((gloc[0],floc[0])[gloc[0]>floc[0]],(gloc[1],floc[1])[gloc[1]>floc[1]])
         print('top left loc of gf %d %d'%(gc[0],gc[1]))
         Io = (np.multiply(w_E, pim[1:-1, 2:]) + np.multiply(w_S, pim[2:, 1:-1]) + np.multiply(w_W, pim[1:-1, :J]) \
@@ -124,164 +256,75 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         ax.set_title('pim')
         plt.colorbar(orientation='horizontal')
         plt.show()
-        for n in range(niter):
-            c=[*gc]#-->
-            while c[1]<J-1:
-                Io[c[0],c[1]+1]=(w_W[c[0],c[1]+1]*Io[tuple(c)]+w_SW[c[0],c[1]+1]*Io[c[0]+1,c[1]])/di[c[0],c[1]+1]
-                Io[c[0]+1,c[1]+1]=(w_W[c[0]+1,c[1]+1]*Io[c[0]+1,c[1]]+w_NW[c[0]+1,c[1]+1]*Io[tuple(c)]+w_N[c[0]+1,c[1]+1]*Io[c[0],c[1]+1])/di[c[0]+1,c[1]+1]
-                c[1]+=1
-            c=[gc[0]+1,gc[1]]
-            while c[0]<I-1:
-                Io[c[0]+1,c[1]]=(w_N[c[0]+1,c[1]]*Io[tuple(c)]+w_NE[c[0]+1,c[1]]*Io[c[0],c[1]+1])/di[c[0]+1,c[1]]
-                while c[1]<J-1:
-                    Io[c[0]+1,c[1]+1]=(w_W[c[0]+1,c[1]+1]*Io[c[0]+1,c[1]]+w_NW[c[0]+1,c[1]+1]*Io[tuple(c)]+w_N[c[0]+1,c[1]+1]*Io[c[0],c[1]+1])/di[c[0]+1,c[1]+1]
-                    c[1]+=1
-                c[0]+=1
-                c[1]=gc[1]
-            c=[*gc]
-            while c[0]>0:
-                Io[c[0]-1,c[1]]=(w_S[c[0]-1,c[1]]*Io[tuple(c)]+w_SE[c[0]-1,c[1]]*Io[c[0],c[1]+1])/di[c[0]-1,c[1]]
-                while c[1]<J-1:
-                    Io[c[0]-1,c[1]+1]=(w_W[c[0]-1,c[1]+1]*Io[c[0]-1,c[1]]+w_SW[c[0]-1,c[1]+1]*Io[tuple(c)]+w_S[c[0]-1,c[1]+1]*Io[c[0],c[1]+1])/di[c[0]-1,c[1]+1]
-                    c[1]+=1
-                c[0]-=1
-                c[1]=gc[1]
-            c=[*gc]#<--
-            while c[1]>0:
-                Io[c[0],c[1]-1]=(w_E[c[0],c[1]-1]*Io[tuple(c)]+w_SE[c[0],c[1]-1]*Io[c[0]+1,c[1]])/di[c[0],c[1]-1]
-                Io[c[0]+1,c[1]-1]=(w_E[c[0]+1,c[1]-1]*Io[c[0]+1,c[1]]+w_NE[c[0]+1,c[1]-1]*Io[tuple(c)]+w_N[c[0]+1,c[1]-1]*Io[c[0],c[1]-1])/di[c[0]+1,c[1]-1]
-                c[1]-=1
-            c=[gc[0]+1,gc[1]]
-            while c[0]<I-1:
-                Io[c[0]+1,c[1]]=(w_N[c[0]+1,c[1]]*Io[tuple(c)]+w_NW[c[0]+1,c[1]]*Io[c[0],c[1]-1])/di[c[0]+1,c[1]]
-                while c[1]>0:
-                    Io[c[0]+1,c[1]-1]=(w_E[c[0]+1,c[1]-1]*Io[c[0]+1,c[1]]+w_NE[c[0]+1,c[1]-1]*Io[tuple(c)]+w_N[c[0]+1,c[1]-1]*Io[c[0],c[1]-1])/di[c[0]+1,c[1]-1]
-                    c[1]-=1
-                c[0]+=1
-                c[1]=gc[1]
-            c=[*gc]
-            while c[0]>0:
-                Io[c[0]-1,c[1]]=(w_S[c[0]-1,c[1]]*Io[tuple(c)]+w_SW[c[0]-1,c[1]]*Io[c[0],c[1]-1])/di[c[0]-1,c[1]]
-                while c[1]>0:
-                    Io[c[0]-1,c[1]-1]=(w_E[c[0]-1,c[1]-1]*Io[c[0]-1,c[1]]+w_SE[c[0]-1,c[1]-1]*Io[tuple(c)]+w_S[c[0]-1,c[1]-1]*Io[c[0],c[1]-1])/di[c[0]-1,c[1]-1]
-                    c[1]-=1
-                c[0]-=1
-                c[1]=gc[1]
 
-            gp = Io - im
-            Io = np.tanh(gp/rsig)
-            Io[floc[0],floc[1]] = 1
-            Io[gloc[0],gloc[1]] = -1
-            im=copy.deepcopy(Io)
-            ax = plt.subplot(111)
-            plt.imshow(Io)
-            ax.set_title('Io')
-            plt.colorbar(orientation='horizontal')
-            plt.show()
-        return Io
+        # g f heat expand
+        heat_expa(gc,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
 
-    def msiter(niter=1):
-        nonlocal pim, v, Vp, w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW, cur,rsig,di
-        for i in range(niter):
-            # pim[1:-1,1:-1,:]-=pim[1:-1,1:-1,:][gloc[0],gloc[1],:]
-            Io = (np.multiply(w_E, pim[1:-1, 2:]) + np.multiply(w_S, pim[2:, 1:-1]) + np.multiply(w_W, pim[1:-1, :J]) \
-                  + np.multiply( w_N, pim[:I, 1:-1]) + np.multiply(w_SE, pim[2:, 2:]) + np.multiply(w_NE, pim[:I, 2:]) \
-                  + np.multiply( w_NW, pim[:I, :J]) + np.multiply(w_SW, pim[2:, :J]))/di.reshape((I, J))
-            gp = Io - pim[1:-1,1:-1]
-            # v[1:-1,1:-1] = gamma * v[1:-1,1:-1] + a *  gp
-            pim[1:-1,1:-1] = np.tanh(gp/rsig)
-            pim[floc[0]+1,floc[1]+1] = 1
-            pim[gloc[0]+1,gloc[1]+1] = -1
+        gp = Io - im
+        Io = np.tanh(gp/rsig)
+        Io[floc[0],floc[1]] = 1
+        Io[gloc[0],gloc[1]] = -1
         ax = plt.subplot(111)
-        plt.imshow(pim[1:-1,1:-1])
-        ax.set_title('pim')
+        plt.imshow(Io)
+        ax.set_title('Io')
         plt.colorbar(orientation='horizontal')
         plt.show()
 
-    def msconti(ncont=0, mcont=12):
-        nonlocal pim
-        imgc = copy.deepcopy(pim)
-        msiter(10)
-        if np.array_equal(np.round(np.exp(pim),8),np.round(np.exp(imgc),8)):
-        # ginf=1e-12
-        # if np.sum(np.square((pim-imgc)[1:-1,1:-1,:]))<ginf:
-            print('fix found continue iter %d' % (ncont * 1000))
-            # print(np.round(pim[:10, :10, 0], 6))
-            # print(np.round(v[1:-1, 1:-1, 0], 6))
-            # print('ground ',pim[gloc[0],gloc[1],:])
-            return
-        else:
-            if ncont == mcont:
-                print('no fix after continue iter %d' % (ncont * 1000))
-                # print(np.round(pim[:10, :10, 0], 6))
-                # print(np.round(imgc[:10, :10, 0], 6))
-                # print('ground ',img[gloc[0],gloc[1],:])
-                # print(np.round(np.exp(img[:10,:10,0]), 6))
-                # print(np.round(np.exp(imgc[:10,:10,0]), 6))
-                return
-            print('continue')
-            ncont += 1
-            msiter(niter=1)
-            msconti(ncont, mcont)
+        # new heat center
+        gc1,gc2,gc3,gc4=split_expa(gc,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
+        for gc in (gc1,gc2,gc3,gc4):
+            if (gc[0]>0) &(gc[0]<I-1) & (gc[1]>0) &(gc[1]<J-1):
+                gcs=split_expa(gc,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
+                for g in gcs:
+                    if (g[0]>0) &(g[0]<I-1) & (g[1]>0) &(g[1]<J-1):
+                        gs=split_expa(g,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
+                        for g2 in gs:
+                            if (g2[0]>0) &(g2[0]<I-1) & (g2[1]>0) &(g2[1]<J-1):
+                                g2s=split_expa(g,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
+            #         else:
+            #             print('stop g %d %d'%g)
+            # else:
+            #     print('stop gc %d %d'%gc)
 
-    # msiter()
-    # msconti(mcont=mcont)
+        # Io[Io>1]=1
+        # Io[Io<-1]=-1
+        # Io[(1-Io)<dmin]=1
+        # Io[(Io+1)<dmin]=-1
+
+        return Io
+
     img=ms_seq()
-    # return pim[1:-1,1:-1]
-    # return pim[1:-1,1:-1,:]
     return img
 
 
-def grad_m(grad):
-    """Return prob mean value of gradient"""
-    h, b = np.histogram(abs(grad).flatten(), bins=20)
-    pk = np.argmax(h)
-    nf = 3
-    ginf = 1e-8
-    vh = [None] * 2
-    vh[0] = np.dot(h[pk:pk + nf], b[1 + pk:1 + pk + nf]) / np.sum(h[pk:pk + nf])
-    vh[1] = np.dot(h[pk:pk + nf + 1], b[1 + pk:2 + pk + nf]) / np.sum(h[pk:pk + nf + 1])
-    for i in range(2, len(h)):
-        v = np.dot(h[pk:pk + nf + i], b[1 + pk:1 + pk + nf + i]) / np.sum(h[pk:pk + nf + i])
-        if (abs(v - vh[1]) < ginf) & (abs(vh[0] + v - 2 * vh[1]) < ginf):
-            break
-        vh[0] = vh[1]
-        vh[1] = v
-    return np.round(v, int(np.ceil(np.log10(1 / v))))
-
-
 if __name__ == "__main__":
+    #E,S,W,N,SE,SW,NW,NE
     lij=((0,1),(1,0),(0,-1),(-1,0),(1,1),(1,-1),(-1,-1),(-1,1))
 
-    with open('imgs/tri_part','rb') as f:
-        im=np.load(f)
-    im=im[4:14,5:15]
-    # iph=im.reshape((*im.shape,1))
-    iph=(im/np.sum(im)).reshape((*im.shape,1))
+    # with open('imgs/tri_part','rb') as f:
+    #     im=np.load(f)
+    # # im=im[4:14,5:15]
+    # # iph=im.reshape((*im.shape,1))
+    # iph=(im/np.sum(im)).reshape((*im.shape,1))
     # iph=-np.log(im/np.sum(im)).reshape((*im.shape,1))
     # iph=-np.log(iph).reshape((*im.shape,1))
 
-    # data_path = os.path.join(os.getcwd(), 'photos')
-    # im_flist = os.listdir(data_path)
-    # im_no = 0
-    # im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
-    # # im=im[110:150,140:190,:]
-    # im = im[40:60, 10:50, :]
-    # # im=im[40:80,10:60,:]
-    # ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
-    # iph = im / ime
-    # iph[iph == 0] = .0000001 / np.sum(ime)
-    # # iph=np.sqrt(iph)
+    data_path = os.path.join(os.getcwd(), 'photos')
+    im_flist = os.listdir(data_path)
+    im_no = 0
+    im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
+    im = im[40:60, 10:50, :]
+    ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
+    iph = im / ime
 
     I, J, K = iph.shape
     l = np.arange(I * J).reshape(I, J)
     # ig = msimg(iph, mcont=4)
-    ig=msimg(copy.deepcopy(iph),mcont=1)
+    ig=msimg(copy.deepcopy(iph))
     # ig=msimg(ig,rsig=.08)
 
-    # blabels=np.zeros((I,J,6))
-    # prob = 1 / (1 + np.exp(-np.sum(np.multiply(ig,iph),axis=2)))
-    # blabels[:,:,0] = (prob > np.random.rand(*prob.shape)).astype('int')
+    blabels=np.zeros((I,J,6))
+    blabels[:,:,0] = (ig>0).astype('int')
 
     ax = plt.subplot(231)
     # plt.imshow(im[:,:,0])
@@ -300,8 +343,8 @@ if __name__ == "__main__":
     # plt.colorbar(orientation='horizontal')
 
     ax = plt.subplot(233)
-    plt.imshow(iph[:, :, 0])
-    ax.set_title('iph')
+    plt.imshow(blabels[:, :, 0])
+    ax.set_title('ib')
     plt.colorbar(orientation='horizontal')
 
     # cmsk=np.sum(blabels,-1).astype('bool') # cut nodes mask

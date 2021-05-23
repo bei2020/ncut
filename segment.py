@@ -83,7 +83,7 @@ def img_lap(img,rsig=.1):
     L=D-W
     return L,D
 
-def segimg_lap(seg,img, emin=1e-6):
+def segimg_lap(seg,img, emin=1e-16):
     """ Return Laplacian of image subgraph.
     seg: segmentation mask of image
     img: intensity image matrix
@@ -249,16 +249,16 @@ if __name__=="__main__":
     data_path = os.path.join(os.getcwd(), 'photos')
     im_flist = os.listdir(data_path)
     im_no = 2
-    # im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
+    # img = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
     im = Image.open(os.path.join(data_path, im_flist[im_no]))
-    rim = im.resize((np.array(im.size) / 10).astype(int))
-    rim = np.asarray(rim)
-    im = rim[10:22, 10:50,:]
-    # im=im[110:150,140:190,:]
-    # im = im[40:60, 10:50, :]
-    # im = im[40:50, 10:20, :]
+    im = im.resize((np.array(im.size) / 10).astype(int))
+    im = np.asarray(im)
+    im = im[10:22, 10:50,:]
+    # # im=im[110:150,140:190,:]
+    # im = img[40:60, 10:50, :]
+    # # im = im[40:50, 10:20, :]
     ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
-    img = im / ime
+    im = im / ime
 
     if len(im.shape)==2:
         I,J=im.shape
@@ -266,10 +266,10 @@ if __name__=="__main__":
         I,J,K=im.shape
     N=I*J
     l=np.arange(N).reshape(I,J)
-    L,D=img_lap(img)
+    L,D=img_lap(im)
     d = np.diag(D)
     Ls=np.multiply(np.multiply((d**(-1/2)).reshape(N, 1), L), (d**(-1/2)).reshape(1, N))
-    w,v=eiges(Ls,k=50)
+    # w,v=eiges(Ls,k=50)
 
     # with open('test/tri_centered_SMeigs4_lap3d','wb') as f:
     #     np.save(f,w)
@@ -277,14 +277,15 @@ if __name__=="__main__":
     # with open('test/tri_centered_SMeigs5','rb') as f:
     #     w=np.load(f)
     #     v= np.load(f)
-    # w,v=eigs(L,k=11,M=D,which='SM')
-    # w=w.astype(np.float)
-    # v=v.astype(np.float)
+    w,v=eigs(L,k=11,M=D,which='SM')
+    w=w.astype(np.float)
+    v=v.astype(np.float)
 
-    row=2
-    # plot_eigs(w[:11],v[:,:11],shape=(I,J),row=row)
-    plot_eigs(w[:7],v[:,:7],shape=(I,J),row=row)
+    row=3
+    plot_eigs(w[:11],v[:,:11],shape=(I,J),row=row)
+    # plot_eigs(w[:7],v[:,:7],shape=(I,J),row=row)
     ax=plt.subplot(row,4,row*4)
+    # plt.imshow(img[10:22, 10:50,:])
     plt.imshow(im)
     ax.set_title('centered image')
     plt.colorbar(orientation='horizontal')

@@ -24,9 +24,12 @@ python recipt_seg.py
 ![zero crossing](imgs/reci2-2_Dog_sig2_minmax1.png)
 
 ## pixel label
-![label](imgs/reci_label.png)
-![label](imgs/reci_label_.05.08.1.2.3_8000.png)
 ![denoise](imgs/butt_denoise.png)
+### binary label
+`ms_bina.py`
+
+![denoise](imgs/butt_bina.png)
+
 ## ncut with eigensolver Lanczos
 `segment.py`
 
