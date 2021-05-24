@@ -10,7 +10,8 @@ import logging
 FORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('ms')
-logger.setLevel('INFO')
+# logger.setLevel('INFO')
+logger.setLevel('DEBUG')
 
 def SE_expa(ground_center,Im,w_N,w_NE,w_W,w_NW,di):
     """gc heat expand in S,E directions"""
@@ -63,7 +64,7 @@ def NW_expa(ground_center,Im,w_S,w_SW,w_E,w_SE,di):
         c[0]-=1
         c[1]=ground_center[1]
 
-def heat_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di):
+def heat_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig):
     """gf square heat expand, top left corner as ground center"""
     logger.debug('heat center %d %d'%ground_center)
     dmin=1e-2
@@ -87,13 +88,15 @@ def heat_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di):
     Im[(1-Im)<dmin]=1
     Im[(Im+1)<dmin]=-1
 
-    # ax = plt.subplot(111)
-    # plt.imshow(Im)
-    # ax.set_title('Im')
-    # plt.colorbar(orientation='horizontal')
-    # plt.show()
+    # Im = np.tanh(Im/rsig)
+    ax = plt.subplot(111)
+    plt.imshow(Im)
+    ax.set_title('Im')
+    plt.colorbar(orientation='horizontal')
+    plt.show()
+    return Im
 
-def split_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di):
+def split_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig):
     """Return new ground_center.
     Find corners with the same heat of g f then heat expand."""
     logger.debug('split %d %d'%ground_center)
@@ -103,9 +106,10 @@ def split_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di):
     gc1=tuple(c)
     logger.debug('top left gc1 %d %d'%(c[0],c[1]))
     if (gc1[0]>0) & (gc1[1]>0):
-        Im[c[0]+1,c[1]]+= (w_N[c[0]+1,c[1]]*Im[tuple(c)]+w_NE[c[0]+1,c[1]]*Im[c[0],c[1]+1])/di[c[0]+1,c[1]]
-        Im[c[0]+1,c[1]+1]+= (w_W[c[0]+1,c[1]+1]*Im[c[0]+1,c[1]]+w_NW[c[0]+1,c[1]+1]*Im[tuple(c)]+w_N[c[0]+1,c[1]+1]*Im[c[0],c[1]+1])/di[c[0]+1,c[1]+1]
-        heat_expa(gc1,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
+        if (Im[c[0]-1,c[1]]!=-Im[tuple(c)])&(Im[c[0],c[1]-1]!=-Im[tuple(c)]):
+            Im[c[0]+1,c[1]]+= (w_N[c[0]+1,c[1]]*Im[tuple(c)]+w_NE[c[0]+1,c[1]]*Im[c[0],c[1]+1])/di[c[0]+1,c[1]]
+            Im[c[0]+1,c[1]+1]+= (w_W[c[0]+1,c[1]+1]*Im[c[0]+1,c[1]]+w_NW[c[0]+1,c[1]+1]*Im[tuple(c)]+w_N[c[0]+1,c[1]+1]*Im[c[0],c[1]+1])/di[c[0]+1,c[1]+1]
+            Im=heat_expa(gc1,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig)
 
     c=[ground_center[0],ground_center[1]+1]
     c[0]-=np.sum((Im[:c[0],c[1]]==Im[tuple(c)]).astype('int'))
@@ -113,9 +117,10 @@ def split_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di):
     gc2=tuple(c)
     logger.debug('top right gc2 %d %d'%(c[0],c[1]))
     if (gc2[0]>0) & (gc2[1]<J-1):
-        Im[c[0]+1,c[1]]+=(w_N[c[0]+1,c[1]]*Im[tuple(c)]+w_NW[c[0]+1,c[1]]*Im[c[0],c[1]-1])/di[c[0]+1,c[1]]
-        Im[c[0]+1,c[1]-1]+=(w_E[c[0]+1,c[1]-1]*Im[c[0]+1,c[1]]+w_NE[c[0]+1,c[1]-1]*Im[tuple(c)]+w_N[c[0]+1,c[1]-1]*Im[c[0],c[1]-1])/di[c[0]+1,c[1]-1]
-        heat_expa((gc2[0],gc2[1]-1),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
+        if (Im[c[0]-1,c[1]]!=-Im[tuple(c)])&(Im[c[0],c[1]+1]!=-Im[tuple(c)]):
+            Im[c[0]+1,c[1]]+=(w_N[c[0]+1,c[1]]*Im[tuple(c)]+w_NW[c[0]+1,c[1]]*Im[c[0],c[1]-1])/di[c[0]+1,c[1]]
+            Im[c[0]+1,c[1]-1]+=(w_E[c[0]+1,c[1]-1]*Im[c[0]+1,c[1]]+w_NE[c[0]+1,c[1]-1]*Im[tuple(c)]+w_N[c[0]+1,c[1]-1]*Im[c[0],c[1]-1])/di[c[0]+1,c[1]-1]
+            Im=heat_expa((gc2[0],gc2[1]-1),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig)
 
     c=[ground_center[0]+1,ground_center[1]]
     c[0]+=np.sum((Im[c[0]+1:,c[1]]==Im[tuple(c)]).astype('int'))
@@ -123,9 +128,10 @@ def split_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di):
     gc3=tuple(c)
     logger.debug('bottom left gc3 %d %d'%(c[0],c[1]))
     if (gc3[0]<I-1) & (gc3[1]>0):
-        Im[c[0]-1,c[1]]+=(w_S[c[0]-1,c[1]]*Im[tuple(c)]+w_SE[c[0]-1,c[1]]*Im[c[0],c[1]+1])/di[c[0]-1,c[1]]
-        Im[c[0]-1,c[1]+1]+=(w_W[c[0]-1,c[1]+1]*Im[c[0]-1,c[1]]+w_SW[c[0]-1,c[1]+1]*Im[tuple(c)]+w_S[c[0]-1,c[1]+1]*Im[c[0],c[1]+1])/di[c[0]-1,c[1]+1]
-        heat_expa((gc3[0]-1,gc3[1]),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
+        if (Im[c[0]+1,c[1]]!=-Im[tuple(c)])&(Im[c[0],c[1]-1]!=-Im[tuple(c)]):
+            Im[c[0]-1,c[1]]+=(w_S[c[0]-1,c[1]]*Im[tuple(c)]+w_SE[c[0]-1,c[1]]*Im[c[0],c[1]+1])/di[c[0]-1,c[1]]
+            Im[c[0]-1,c[1]+1]+=(w_W[c[0]-1,c[1]+1]*Im[c[0]-1,c[1]]+w_SW[c[0]-1,c[1]+1]*Im[tuple(c)]+w_S[c[0]-1,c[1]+1]*Im[c[0],c[1]+1])/di[c[0]-1,c[1]+1]
+            Im=heat_expa((gc3[0]-1,gc3[1]),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig)
 
     c=[ground_center[0]+1,ground_center[1]+1]
     c[0]+=np.sum((Im[c[0]+1:,c[1]]==Im[tuple(c)]).astype('int'))
@@ -133,10 +139,14 @@ def split_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di):
     gc4=tuple(c)
     logger.debug('bottom right gc4 %d %d'%(c[0],c[1]))
     if (gc4[0]<I-1) & (gc4[1]<J-1):
-        Im[c[0]-1,c[1]]+=(w_S[c[0]-1,c[1]]*Im[tuple(c)]+w_SW[c[0]-1,c[1]]*Im[c[0],c[1]-1])/di[c[0]-1,c[1]]
-        Im[c[0]-1,c[1]-1]+=(w_E[c[0]-1,c[1]-1]*Im[c[0]-1,c[1]]+w_SE[c[0]-1,c[1]-1]*Im[tuple(c)]+w_S[c[0]-1,c[1]-1]*Im[c[0],c[1]-1])/di[c[0]-1,c[1]-1]
-        heat_expa((gc4[0]-1,gc4[1]-1),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
-    return gc1,gc2,gc3,gc4
+        if (Im[c[0]+1,c[1]]!=-Im[tuple(c)])&(Im[c[0],c[1]+1]!=-Im[tuple(c)]):
+            Im[c[0]-1,c[1]]+=(w_S[c[0]-1,c[1]]*Im[tuple(c)]+w_SW[c[0]-1,c[1]]*Im[c[0],c[1]-1])/di[c[0]-1,c[1]]
+            Im[c[0]-1,c[1]-1]+=(w_E[c[0]-1,c[1]-1]*Im[c[0]-1,c[1]]+w_SE[c[0]-1,c[1]-1]*Im[tuple(c)]+w_S[c[0]-1,c[1]-1]*Im[c[0],c[1]-1])/di[c[0]-1,c[1]-1]
+            Im=heat_expa((gc4[0]-1,gc4[1]-1),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig)
+
+    Im = np.tanh(Im/rsig)
+    Im[np.invert(((Im == 1).astype('int') + (Im == -1).astype('int')).astype('bool'))]=0
+    return Im,(gc1,gc2,gc3,gc4)
 
 def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     """Return mean shift image."""
@@ -236,18 +246,18 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
 
     def ms_seq():
         """Return binary img."""
-        nonlocal pim,  w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,gloc,floc,di
+        nonlocal pim,  w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,gloc,floc,di,rsig
         # umax=.5
         gc=((gloc[0],floc[0])[gloc[0]>floc[0]],(gloc[1],floc[1])[gloc[1]>floc[1]])
         print('top left loc of gf %d %d'%(gc[0],gc[1]))
         Io = (np.multiply(w_E, pim[1:-1, 2:]) + np.multiply(w_S, pim[2:, 1:-1]) + np.multiply(w_W, pim[1:-1, :J]) \
               + np.multiply( w_N, pim[:I, 1:-1]) + np.multiply(w_SE, pim[2:, 2:]) + np.multiply(w_NE, pim[:I, 2:]) \
               + np.multiply( w_NW, pim[:I, :J]) + np.multiply(w_SW, pim[2:, :J]))/di
-        gp = Io - pim[1:-1,1:-1]
+        gp = Io + pim[1:-1,1:-1]
         Io= np.zeros((I,J))
         Io[floc[0],floc[1]] = 1
         Io[gloc[0],gloc[1]] = -1
-        im=copy.deepcopy(Io)
+        # im=copy.deepcopy(Io)
         Io[gc[0]:gc[0]+2,gc[1]:gc[1]+2] = np.tanh(gp/rsig)[gc[0]:gc[0]+2,gc[1]:gc[1]+2]
         Io[floc[0],floc[1]] = 1
         Io[gloc[0],gloc[1]] = -1
@@ -258,12 +268,9 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         plt.show()
 
         # g f heat expand
-        heat_expa(gc,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
+        Io=heat_expa(gc,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig)
 
-        gp = Io - im
-        Io = np.tanh(gp/rsig)
-        Io[floc[0],floc[1]] = 1
-        Io[gloc[0],gloc[1]] = -1
+        Io = np.tanh(Io/rsig)
         ax = plt.subplot(111)
         plt.imshow(Io)
         ax.set_title('Io')
@@ -271,16 +278,16 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         plt.show()
 
         # new heat center
-        gc1,gc2,gc3,gc4=split_expa(gc,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
-        for gc in (gc1,gc2,gc3,gc4):
+        Io,gcc=split_expa(gc,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig)
+        for gc in gcc:
             if (gc[0]>0) &(gc[0]<I-1) & (gc[1]>0) &(gc[1]<J-1):
-                gcs=split_expa(gc,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
-                for g in gcs:
-                    if (g[0]>0) &(g[0]<I-1) & (g[1]>0) &(g[1]<J-1):
-                        gs=split_expa(g,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
-                        for g2 in gs:
-                            if (g2[0]>0) &(g2[0]<I-1) & (g2[1]>0) &(g2[1]<J-1):
-                                g2s=split_expa(g,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
+                Io,gcs=split_expa(gc,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig)
+                # for g in gcs:
+                #     if (g[0]>0) &(g[0]<I-1) & (g[1]>0) &(g[1]<J-1):
+                #         Io,gs=split_expa(g,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig)
+                #         for g2 in gs:
+                #             if (g2[0]>0) &(g2[0]<I-1) & (g2[1]>0) &(g2[1]<J-1):
+                #                 g2s=split_expa(g,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
             #         else:
             #             print('stop g %d %d'%g)
             # else:
@@ -304,10 +311,9 @@ if __name__ == "__main__":
     # with open('imgs/tri_part','rb') as f:
     #     im=np.load(f)
     # # im=im[4:14,5:15]
+    # # im=im[5:,5:15]
     # # iph=im.reshape((*im.shape,1))
     # iph=(im/np.sum(im)).reshape((*im.shape,1))
-    # iph=-np.log(im/np.sum(im)).reshape((*im.shape,1))
-    # iph=-np.log(iph).reshape((*im.shape,1))
 
     data_path = os.path.join(os.getcwd(), 'photos')
     im_flist = os.listdir(data_path)
