@@ -1,0 +1,23 @@
+%===== binar1.m
+buttg=imread('photos/img_003.bmp');
+butt=buttg(40:59, 10:49, :);
+[nlig ncol]=size(butt); nbpix=prod(size(butt));
+%===== global histogram
+pixc3=zeros(nlig*ncol,1); pixc3(:)=butt;
+histog=hist(pixc3,256)/nlig/ncol;
+figure(1); plot((O:255] ,histog); grid
+%===== thresholds based on a visual examination
+% of the histogram
+figure(2); subplot(131);
+imagesc(butt); axis('image'); colormap(cmap);
+%===== threshold 1
+pixc2=zeros(nlig,ncol);
+seuil=152; idxy=find(butt>seuil);
+pixc2(idxy)=255*ones(size(idxy)); subplot(132); imagesc(pixc2);
+axis('image'); colormap(cmap)
+%===== threshold 2
+pixc2=zeros(nlig,ncol);
+seuil=90; idxy=find(butt>seuil);
+pixc2(idxy)=255*ones(size(idxy)); subplot(133); imagesc(pixc2);
+axis('image'); colormap(cmap)
+save histog histog

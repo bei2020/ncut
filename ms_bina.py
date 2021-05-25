@@ -325,37 +325,56 @@ if __name__ == "__main__":
 
     data_path = os.path.join(os.getcwd(), 'photos')
     im_flist = os.listdir(data_path)
-    im_no = 0
+    im_no = 3
     im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
-    im = im[40:60, 10:50, :]
-    ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
-    iph = im / ime
+    # im = im[40:60, 10:50, :]
+    # ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
+    # iph = im / ime
 
-    I, J, K = iph.shape
-    l = np.arange(I * J).reshape(I, J)
-    # ig = msimg(iph, mcont=4)
-    ig=msimg(copy.deepcopy(iph))
-    # ig=msimg(ig,rsig=.08)
+    # I, J, K = iph.shape
+    # l = np.arange(I * J).reshape(I, J)
+    # # ig = msimg(iph, mcont=4)
+    # ig=msimg(copy.deepcopy(iph))
+    # # ig=msimg(ig,rsig=.08)
 
-    blabels=np.zeros((I,J,6))
-    blabels[:,:,0] = (ig>0).astype('int')
+    # otsu
+    # im = im[40:60, 10:50]
+    im = im[:, :, -1]
+    # I, J, K = im.shape
+    I, J = im.shape
+    N=I*J
+    h, b = np.histogram(im.flatten(), bins=256)
+    mui=0
+    pi=0
+    mus=np.dot(b[1:],h)
+    H=np.zeros(255)
+    for s in range(255):
+        mui+=b[s+1]*h[s]
+        mus-=b[s+1]*h[s]
+        pi+=h[s]
+        H[s]=pi*(N-pi)*(mui/pi-mus/(N-pi))**2
+    s=np.argmax(H)
+    blabels = (im>b[s+1]).astype('int')
 
-    ax = plt.subplot(231)
+    # blabels=np.zeros((I,J,6))
+    # blabels[:,:,0] = (ig>0).astype('int')
+
+    ax = plt.subplot(121)
     # plt.imshow(im[:,:,0])
     plt.imshow(im)
     ax.set_title('sample')
     plt.colorbar(orientation='horizontal')
-    ax = plt.subplot(232)
+    ax = plt.subplot(122)
     # plt.imshow(np.square(ig[:,:,0])*np.sum(im))
     # plt.imshow(ig[:, :, 0])
-    plt.imshow(ig)
-    ax.set_title('ig')
+    plt.imshow(blabels,cmap='gray')
+    ax.set_title('blabel')
     plt.colorbar(orientation='horizontal')
 
-    ax = plt.subplot(233)
-    plt.imshow(blabels[:, :, 0])
-    ax.set_title('ib')
-    plt.colorbar(orientation='horizontal')
+    # ax = plt.subplot(233)
+    # plt.imshow(blabels[:, :, 0])
+    # ax.set_title('ib')
+    # plt.colorbar(orientation='horizontal')
 
     # cmsk=np.sum(blabels,-1).astype('bool') # cut nodes mask
     # iph[cmsk] = -np.inf
