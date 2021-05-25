@@ -10,8 +10,8 @@ import logging
 FORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('ms')
-# logger.setLevel('INFO')
-logger.setLevel('DEBUG')
+logger.setLevel('INFO')
+# logger.setLevel('DEBUG')
 
 def SE_expa(ground_center,Im,w_N,w_NE,w_W,w_NW,di):
     """gc heat expand in S,E directions"""
@@ -98,7 +98,7 @@ def heat_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig):
 
 def split_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig):
     """Return new ground_center.
-    Find corners with the same heat of g f then heat expand."""
+    Find corners with the same heat of g f as new gc, calculate new gf square , then heat expand."""
     logger.debug('split %d %d'%ground_center)
     c=[*ground_center]
     c[0]-=np.sum((Im[:c[0],c[1]]==Im[tuple(c)]).astype('int'))
@@ -109,6 +109,8 @@ def split_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig):
         if (Im[c[0]-1,c[1]]!=-Im[tuple(c)])&(Im[c[0],c[1]-1]!=-Im[tuple(c)]):
             Im[c[0]+1,c[1]]+= (w_N[c[0]+1,c[1]]*Im[tuple(c)]+w_NE[c[0]+1,c[1]]*Im[c[0],c[1]+1])/di[c[0]+1,c[1]]
             Im[c[0]+1,c[1]+1]+= (w_W[c[0]+1,c[1]+1]*Im[c[0]+1,c[1]]+w_NW[c[0]+1,c[1]+1]*Im[tuple(c)]+w_N[c[0]+1,c[1]+1]*Im[c[0],c[1]+1])/di[c[0]+1,c[1]+1]
+            Im[c[0]+1,c[1]] = np.tanh(Im[c[0]+1,c[1]]/rsig)
+            Im[c[0]+1,c[1]+1] = np.tanh(Im[c[0]+1,c[1]+1]/rsig)
             Im=heat_expa(gc1,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig)
 
     c=[ground_center[0],ground_center[1]+1]
@@ -120,6 +122,8 @@ def split_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig):
         if (Im[c[0]-1,c[1]]!=-Im[tuple(c)])&(Im[c[0],c[1]+1]!=-Im[tuple(c)]):
             Im[c[0]+1,c[1]]+=(w_N[c[0]+1,c[1]]*Im[tuple(c)]+w_NW[c[0]+1,c[1]]*Im[c[0],c[1]-1])/di[c[0]+1,c[1]]
             Im[c[0]+1,c[1]-1]+=(w_E[c[0]+1,c[1]-1]*Im[c[0]+1,c[1]]+w_NE[c[0]+1,c[1]-1]*Im[tuple(c)]+w_N[c[0]+1,c[1]-1]*Im[c[0],c[1]-1])/di[c[0]+1,c[1]-1]
+            Im[c[0]+1,c[1]] = np.tanh(Im[c[0]+1,c[1]]/rsig)
+            Im[c[0]+1,c[1]-1] = np.tanh(Im[c[0]+1,c[1]-1]/rsig)
             Im=heat_expa((gc2[0],gc2[1]-1),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig)
 
     c=[ground_center[0]+1,ground_center[1]]
@@ -131,6 +135,8 @@ def split_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig):
         if (Im[c[0]+1,c[1]]!=-Im[tuple(c)])&(Im[c[0],c[1]-1]!=-Im[tuple(c)]):
             Im[c[0]-1,c[1]]+=(w_S[c[0]-1,c[1]]*Im[tuple(c)]+w_SE[c[0]-1,c[1]]*Im[c[0],c[1]+1])/di[c[0]-1,c[1]]
             Im[c[0]-1,c[1]+1]+=(w_W[c[0]-1,c[1]+1]*Im[c[0]-1,c[1]]+w_SW[c[0]-1,c[1]+1]*Im[tuple(c)]+w_S[c[0]-1,c[1]+1]*Im[c[0],c[1]+1])/di[c[0]-1,c[1]+1]
+            Im[c[0]-1,c[1]] = np.tanh(Im[c[0]-1,c[1]]/rsig)
+            Im[c[0]-1,c[1]+1] = np.tanh(Im[c[0]-1,c[1]+1]/rsig)
             Im=heat_expa((gc3[0]-1,gc3[1]),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig)
 
     c=[ground_center[0]+1,ground_center[1]+1]
@@ -142,6 +148,8 @@ def split_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig):
         if (Im[c[0]+1,c[1]]!=-Im[tuple(c)])&(Im[c[0],c[1]+1]!=-Im[tuple(c)]):
             Im[c[0]-1,c[1]]+=(w_S[c[0]-1,c[1]]*Im[tuple(c)]+w_SW[c[0]-1,c[1]]*Im[c[0],c[1]-1])/di[c[0]-1,c[1]]
             Im[c[0]-1,c[1]-1]+=(w_E[c[0]-1,c[1]-1]*Im[c[0]-1,c[1]]+w_SE[c[0]-1,c[1]-1]*Im[tuple(c)]+w_S[c[0]-1,c[1]-1]*Im[c[0],c[1]-1])/di[c[0]-1,c[1]-1]
+            Im[c[0]-1,c[1]] = np.tanh(Im[c[0]-1,c[1]]/rsig)
+            Im[c[0]-1,c[1]-1] = np.tanh(Im[c[0]-1,c[1]-1]/rsig)
             Im=heat_expa((gc4[0]-1,gc4[1]-1),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig)
 
     Im = np.tanh(Im/rsig)
@@ -343,10 +351,6 @@ if __name__ == "__main__":
     plt.imshow(ig)
     ax.set_title('ig')
     plt.colorbar(orientation='horizontal')
-    # ax=plt.subplot(233)
-    # plt.imshow(blabels[:,:,0])
-    # ax.set_title('seg1 4000')
-    # plt.colorbar(orientation='horizontal')
 
     ax = plt.subplot(233)
     plt.imshow(blabels[:, :, 0])
