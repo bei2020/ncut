@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from anisodiff2D import anisodiff2D
 import os
 import matplotlib.image as mpimg
 from PIL import Image
@@ -156,6 +157,7 @@ def split_expa(ground_center,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig):
     Im[np.invert(((Im == 1).astype('int') + (Im == -1).astype('int')).astype('bool'))]=0
     return Im,(gc1,gc2,gc3,gc4)
 
+
 def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     """Return mean shift image."""
     fn = strftime("%Y%b%d", gmtime())
@@ -244,9 +246,6 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     floc=np.argmin(np.stack((w_E,w_S,w_W,w_N,w_SE,w_SW,w_NW,w_NE))[:,gloc[0],gloc[1]])
     floc=(gloc[0]+lij[floc][0],gloc[1]+lij[floc][1])
     print('floc %d %d'%(floc[0],floc[1]))
-    pim= np.zeros((I+2,J+2))
-    pim[floc[0]+1,floc[1]+1] = 1
-    pim[gloc[0]+1,gloc[1]+1] = -1
 
     for w in (w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW):
         w[gloc[0],gloc[1]]=0
@@ -254,8 +253,11 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
 
     def ms_seq():
         """Return binary img."""
-        nonlocal pim,  w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,gloc,floc,di,rsig
+        nonlocal w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,gloc,floc,di,rsig
         # umax=.5
+        pim= np.zeros((I+2,J+2))
+        pim[floc[0]+1,floc[1]+1] = 1
+        pim[gloc[0]+1,gloc[1]+1] = -1
         gc=((gloc[0],floc[0])[gloc[0]>floc[0]],(gloc[1],floc[1])[gloc[1]>floc[1]])
         print('top left loc of gf %d %d'%(gc[0],gc[1]))
         Io = (np.multiply(w_E, pim[1:-1, 2:]) + np.multiply(w_S, pim[2:, 1:-1]) + np.multiply(w_W, pim[1:-1, :J]) \
@@ -308,8 +310,107 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
 
         return Io
 
-    img=ms_seq()
-    return img
+    def edge_seq():
+        nonlocal w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,gloc,floc,di,rsig
+        def n_expa(c):
+            """c: center, left pixel of an edge, tuple"""
+            nonlocal Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J
+
+            Io[c[0]-1,c[1]]=(w_S[c[0]-1,c[1]]*Io[c]+w_SE[c[0]-1,c[1]]*Io[c[0],c[1]+1])/di[c[0]-1,c[1]]
+            Io[c[0]-1,c[1]+1]=(w_SW[c[0]-1,c[1]+1]*Io[c]+w_S[c[0]-1,c[1]+1]*Io[c[0],c[1]+1]+w_W[c[0]-1,c[1]+1]*Io[c[0]-1,c[1]])/di[c[0]-1,c[1]+1]
+            Io[c[0]-1,c[1]] = np.tanh(Io[c[0]-1,c[1]]/rsig)
+            Io[c[0]-1,c[1]+1] = np.tanh(Io[c[0]-1,c[1]+1]/rsig)
+            logger.debug('n %d %d'%c)
+            if np.logical_xor(Io[c[0]-1,c[1]]>0,Io[c[0]-1,c[1]+1]>0) &(c[0]>1):
+                n_expa((c[0]-1,c[1]))
+            if  np.logical_xor(Io[c[0]-1,c[1]]>0,Io[c]>0) &(c[1]>0):
+                w_expa((c[0]-1,c[1]))
+            if  np.logical_xor(Io[c[0],c[1]+1]>0,Io[c[0]-1,c[1]+1]>0) &(c[1]<J-2):
+                e_expa((c[0]-1,c[1]+1))
+
+        def s_expa(c):
+            """c: center, left pixel of an edge, tuple"""
+            nonlocal Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J
+            Io[c[0]+1,c[1]]=(w_N[c[0]+1,c[1]]*Io[c]+w_NE[c[0]+1,c[1]]*Io[c[0],c[1]+1])/di[c[0]+1,c[1]]
+            Io[c[0]+1,c[1]+1]=(w_NW[c[0]+1,c[1]+1]*Io[c]+w_N[c[0]+1,c[1]+1]*Io[c[0],c[1]+1]+w_W[c[0]+1,c[1]+1]*Io[c[0]+1,c[1]])/di[c[0]+1,c[1]+1]
+            Io[c[0]+1,c[1]] = np.tanh(  Io[c[0]+1,c[1]]/rsig)
+            Io[c[0]+1,c[1]+1] = np.tanh(Io[c[0]+1,c[1]+1]/rsig)
+            logger.debug('s %d %d'%c)
+            if np.logical_xor(Io[c[0]+1,c[1]]>0,Io[c[0]+1,c[1]+1]>0) &(c[0]<I-2):
+                s_expa((c[0]+1,c[1]))
+            if np.logical_xor(Io[c]>0,Io[c[0]+1,c[1]]>0) &(c[1]>0):
+                w_expa(c)
+            if np.logical_xor(Io[c[0],c[1]+1]>0,Io[c[0]+1,c[1]+1]>0) &(c[1]<J-1):
+                e_expa((c[0],c[1]+1))
+
+        def w_expa(c):
+            """c: center, top pixel of an edge, tuple"""
+            nonlocal Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J
+            Io[c[0],c[1]-1]=(w_E[c[0],c[1]-1]*Io[c]+w_SE[c[0],c[1]-1]*Io[c[0]+1,c[1]])/di[c[0],c[1]-1]
+            Io[c[0]+1,c[1]-1]=(w_NE[c[0]+1,c[1]-1]*Io[c]+w_E[c[0]+1,c[1]-1]*Io[c[0]+1,c[1]]+w_N[c[0]+1,c[1]-1]*Io[c[0],c[1]-1])/di[c[0]+1,c[1]-1]
+            Io[c[0],c[1]-1] = np.tanh(  Io[c[0],c[1]-1] /rsig)
+            Io[c[0]+1,c[1]-1] = np.tanh(Io[c[0]+1,c[1]-1]/rsig)
+            logger.debug('w %d %d'%c)
+            if np.logical_xor(Io[c[0],c[1]-1]>0,Io[c[0]+1,c[1]-1]>0) &(c[1]>1):
+                w_expa((c[0],c[1]-1))
+            if np.logical_xor(Io[c]>0,Io[c[0],c[1]-1]>0) &(c[0]>0):
+                n_expa(c)
+            if np.logical_xor(Io[c[0]+1,c[1]-1]>0,Io[c[0]+1,c[1]]>0) &(c[0]<I-2):
+                s_expa((c[0]+1,c[1]-1))
+
+        def e_expa(c):
+            """c: center, top pixel of an edge, tuple"""
+            nonlocal Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J
+            Io[c[0],c[1]+1]=(w_W[c[0],c[1]+1]*Io[c]+w_SW[c[0],c[1]+1]*Io[c[0]+1,c[1]])/di[c[0],c[1]+1]
+            Io[c[0]+1,c[1]+1]=(w_NW[c[0]+1,c[1]+1]*Io[c]+w_W[c[0]+1,c[1]+1]*Io[c[0]+1,c[1]]+w_N[c[0]+1,c[1]+1]*Io[c[0],c[1]+1])/di[c[0]+1,c[1]+1]
+            Io[c[0],c[1]+1] = np.tanh(  Io[c[0],c[1]+1] /rsig)
+            Io[c[0]+1,c[1]+1] = np.tanh(Io[c[0]+1,c[1]+1]/rsig)
+            logger.debug('e %d %d'%c)
+            if np.logical_xor(Io[c[0],c[1]+1]>0,Io[c[0]+1,c[1]+1]>0) &(c[1]<J-2):
+                e_expa((c[0],c[1]+1))
+            if np.logical_xor(Io[c]>0,Io[c[0],c[1]+1]>0) &(c[0]>0):
+                n_expa(c)
+            if np.logical_xor(Io[c[0]+1,c[1]]>0,Io[c[0]+1,c[1]+1]>0) &(c[0]<I-2):
+                s_expa((c[0]+1,c[1]))
+
+        # umax=.5
+        pim= np.zeros((I+2,J+2))
+        pim[floc[0]+1,floc[1]+1] = 1
+        pim[gloc[0]+1,gloc[1]+1] = -1
+        gc=((gloc[0],floc[0])[gloc[0]>floc[0]],(gloc[1],floc[1])[gloc[1]>floc[1]])
+        print('top left loc of gf %d %d'%(gc[0],gc[1]))
+        Io = (np.multiply(w_E, pim[1:-1, 2:]) + np.multiply(w_S, pim[2:, 1:-1]) + np.multiply(w_W, pim[1:-1, :J]) \
+              + np.multiply( w_N, pim[:I, 1:-1]) + np.multiply(w_SE, pim[2:, 2:]) + np.multiply(w_NE, pim[:I, 2:]) \
+              + np.multiply( w_NW, pim[:I, :J]) + np.multiply(w_SW, pim[2:, :J]))/di
+        gp = Io + pim[1:-1,1:-1]
+        Io= np.zeros((I,J))
+        Io[floc[0],floc[1]] = 1
+        Io[gloc[0],gloc[1]] = -1
+        # im=copy.deepcopy(Io)
+        Io[gc[0]:gc[0]+2,gc[1]:gc[1]+2] = np.tanh(gp/rsig)[gc[0]:gc[0]+2,gc[1]:gc[1]+2]
+        Io[floc[0],floc[1]] = 1
+        Io[gloc[0],gloc[1]] = -1
+        ax = plt.subplot(111)
+        plt.imshow(Io)
+        ax.set_title('pim')
+        plt.colorbar(orientation='horizontal')
+        plt.show()
+
+        # g f edge expand
+        if np.logical_xor(Io[gc]>0,Io[gc[0],gc[1]+1]>0) &(gc[0]>0):
+            n_expa(gc)
+        if np.logical_xor(Io[gc]>0,Io[gc[0]+1,gc[1]]>0) &(gc[1]>0):
+            w_expa(gc)
+        if np.logical_xor(Io[gc[0]+1,gc[1]]>0,Io[gc[0]+1,gc[1]+1]>0) &(gc[0]<I-2):
+            s_expa((gc[0]+1,gc[1]))
+        if np.logical_xor(Io[gc[0],gc[1]+1]>0,Io[gc[0]+1,gc[1]+1]>0) &(gc[1]<J-1):
+            e_expa((gc[0],gc[1]+1))
+        return Io
+
+    # img=ms_seq()
+    # return img
+    bimg=edge_seq()
+    return bimg
 
 
 if __name__ == "__main__":
@@ -321,43 +422,28 @@ if __name__ == "__main__":
     # # im=im[4:14,5:15]
     # # im=im[5:,5:15]
     # # iph=im.reshape((*im.shape,1))
+    # # num_iter=100
+    # # option=1
+    # # delta_t=1/7
+    # # im=anisodiff2D(im,num_iter,delta_t,option)
     # iph=(im/np.sum(im)).reshape((*im.shape,1))
 
     data_path = os.path.join(os.getcwd(), 'photos')
     im_flist = os.listdir(data_path)
-    im_no = 3
+    im_no = 0
     im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
-    # im = im[40:60, 10:50, :]
-    # ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
-    # iph = im / ime
+    im = im[40:60, 10:50, :]
+    ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
+    iph = im / ime
 
     # I, J, K = iph.shape
     # l = np.arange(I * J).reshape(I, J)
     # # ig = msimg(iph, mcont=4)
-    # ig=msimg(copy.deepcopy(iph))
+    ig=msimg(copy.deepcopy(iph))
     # # ig=msimg(ig,rsig=.08)
-
-    # otsu
-    # im = im[40:60, 10:50]
-    im = im[:, :, -1]
-    # I, J, K = im.shape
-    I, J = im.shape
-    N=I*J
-    h, b = np.histogram(im.flatten(), bins=256)
-    mui=0
-    pi=0
-    mus=np.dot(b[1:],h)
-    H=np.zeros(255)
-    for s in range(255):
-        mui+=b[s+1]*h[s]
-        mus-=b[s+1]*h[s]
-        pi+=h[s]
-        H[s]=pi*(N-pi)*(mui/pi-mus/(N-pi))**2
-    s=np.argmax(H)
-    blabels = (im>b[s+1]).astype('int')
-
-    # blabels=np.zeros((I,J,6))
-    # blabels[:,:,0] = (ig>0).astype('int')
+    blabels=ig
+    blabels[blabels>0]=1
+    blabels[blabels<0]=-1
 
     ax = plt.subplot(121)
     # plt.imshow(im[:,:,0])
@@ -366,7 +452,7 @@ if __name__ == "__main__":
     plt.colorbar(orientation='horizontal')
     ax = plt.subplot(122)
     # plt.imshow(np.square(ig[:,:,0])*np.sum(im))
-    # plt.imshow(ig[:, :, 0])
+    # plt.imshow(ig)
     plt.imshow(blabels,cmap='gray')
     ax.set_title('blabel')
     plt.colorbar(orientation='horizontal')
