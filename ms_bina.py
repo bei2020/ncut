@@ -312,66 +312,74 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
 
     def edge_seq():
         nonlocal w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,gloc,floc,di,rsig
-        def n_expa(c):
+        def n_expa(c,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J):
             """c: center, left pixel of an edge, tuple"""
-            nonlocal Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J
+            if (abs(Im[c[0]-1,c[1]])==1) & (abs(Im[c[0]-1,c[1]+1])==1):
+                return
 
-            Io[c[0]-1,c[1]]=(w_S[c[0]-1,c[1]]*Io[c]+w_SE[c[0]-1,c[1]]*Io[c[0],c[1]+1])/di[c[0]-1,c[1]]
-            Io[c[0]-1,c[1]+1]=(w_SW[c[0]-1,c[1]+1]*Io[c]+w_S[c[0]-1,c[1]+1]*Io[c[0],c[1]+1]+w_W[c[0]-1,c[1]+1]*Io[c[0]-1,c[1]])/di[c[0]-1,c[1]+1]
-            Io[c[0]-1,c[1]] = np.tanh(Io[c[0]-1,c[1]]/rsig)
-            Io[c[0]-1,c[1]+1] = np.tanh(Io[c[0]-1,c[1]+1]/rsig)
+            Im[c[0]-1,c[1]]+=(w_S[c[0]-1,c[1]]*Im[c]+w_SE[c[0]-1,c[1]]*Im[c[0],c[1]+1])/di[c[0]-1,c[1]]
+            Im[c[0]-1,c[1]+1]+=(w_SW[c[0]-1,c[1]+1]*Im[c]+w_S[c[0]-1,c[1]+1]*Im[c[0],c[1]+1]+w_W[c[0]-1,c[1]+1]*Im[c[0]-1,c[1]])/di[c[0]-1,c[1]+1]
+            Im[c[0]-1,c[1]] = np.tanh(Im[c[0]-1,c[1]]/rsig)
+            Im[c[0]-1,c[1]+1] = np.tanh(Im[c[0]-1,c[1]+1]/rsig)
             logger.debug('n %d %d'%c)
-            if np.logical_xor(Io[c[0]-1,c[1]]>0,Io[c[0]-1,c[1]+1]>0) &(c[0]>1):
-                n_expa((c[0]-1,c[1]))
-            if  np.logical_xor(Io[c[0]-1,c[1]]>0,Io[c]>0) &(c[1]>0):
-                w_expa((c[0]-1,c[1]))
-            if  np.logical_xor(Io[c[0],c[1]+1]>0,Io[c[0]-1,c[1]+1]>0) &(c[1]<J-2):
-                e_expa((c[0]-1,c[1]+1))
+            if np.logical_xor(Im[c[0]-1,c[1]]>0,Im[c[0]-1,c[1]+1]>0) &(c[0]>1):
+                n_expa((c[0]-1,c[1]),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
+            if  np.logical_xor(Im[c[0]-1,c[1]]>0,Im[c]>0) &(c[1]>0):
+                w_expa((c[0]-1,c[1]),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
+            if  np.logical_xor(Im[c[0],c[1]+1]>0,Im[c[0]-1,c[1]+1]>0):
+                e_expa((c[0]-1,c[1]+1),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
+            return
 
-        def s_expa(c):
+        def s_expa(c,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J):
             """c: center, left pixel of an edge, tuple"""
-            nonlocal Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J
-            Io[c[0]+1,c[1]]=(w_N[c[0]+1,c[1]]*Io[c]+w_NE[c[0]+1,c[1]]*Io[c[0],c[1]+1])/di[c[0]+1,c[1]]
-            Io[c[0]+1,c[1]+1]=(w_NW[c[0]+1,c[1]+1]*Io[c]+w_N[c[0]+1,c[1]+1]*Io[c[0],c[1]+1]+w_W[c[0]+1,c[1]+1]*Io[c[0]+1,c[1]])/di[c[0]+1,c[1]+1]
-            Io[c[0]+1,c[1]] = np.tanh(  Io[c[0]+1,c[1]]/rsig)
-            Io[c[0]+1,c[1]+1] = np.tanh(Io[c[0]+1,c[1]+1]/rsig)
+            if (abs(Im[c[0]+1,c[1]])==1) & (abs(Im[c[0]+1,c[1]+1])==1):
+                return
+            Im[c[0]+1,c[1]]+=(w_N[c[0]+1,c[1]]*Im[c]+w_NE[c[0]+1,c[1]]*Im[c[0],c[1]+1])/di[c[0]+1,c[1]]
+            Im[c[0]+1,c[1]+1]+=(w_NW[c[0]+1,c[1]+1]*Im[c]+w_N[c[0]+1,c[1]+1]*Im[c[0],c[1]+1]+w_W[c[0]+1,c[1]+1]*Im[c[0]+1,c[1]])/di[c[0]+1,c[1]+1]
+            Im[c[0]+1,c[1]] = np.tanh(  Im[c[0]+1,c[1]]/rsig)
+            Im[c[0]+1,c[1]+1] = np.tanh(Im[c[0]+1,c[1]+1]/rsig)
             logger.debug('s %d %d'%c)
-            if np.logical_xor(Io[c[0]+1,c[1]]>0,Io[c[0]+1,c[1]+1]>0) &(c[0]<I-2):
-                s_expa((c[0]+1,c[1]))
-            if np.logical_xor(Io[c]>0,Io[c[0]+1,c[1]]>0) &(c[1]>0):
-                w_expa(c)
-            if np.logical_xor(Io[c[0],c[1]+1]>0,Io[c[0]+1,c[1]+1]>0) &(c[1]<J-1):
-                e_expa((c[0],c[1]+1))
+            if np.logical_xor(Im[c[0]+1,c[1]]>0,Im[c[0]+1,c[1]+1]>0) &(c[0]<I-2):
+                s_expa((c[0]+1,c[1]),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
+            if np.logical_xor(Im[c]>0,Im[c[0]+1,c[1]]>0) &(c[1]>0):
+                w_expa(c,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
+            if np.logical_xor(Im[c[0],c[1]+1]>0,Im[c[0]+1,c[1]+1]>0) &(c[1]<J-1):
+                e_expa((c[0],c[1]+1),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
+            return
 
-        def w_expa(c):
+        def w_expa(c,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J):
             """c: center, top pixel of an edge, tuple"""
-            nonlocal Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J
-            Io[c[0],c[1]-1]=(w_E[c[0],c[1]-1]*Io[c]+w_SE[c[0],c[1]-1]*Io[c[0]+1,c[1]])/di[c[0],c[1]-1]
-            Io[c[0]+1,c[1]-1]=(w_NE[c[0]+1,c[1]-1]*Io[c]+w_E[c[0]+1,c[1]-1]*Io[c[0]+1,c[1]]+w_N[c[0]+1,c[1]-1]*Io[c[0],c[1]-1])/di[c[0]+1,c[1]-1]
-            Io[c[0],c[1]-1] = np.tanh(  Io[c[0],c[1]-1] /rsig)
-            Io[c[0]+1,c[1]-1] = np.tanh(Io[c[0]+1,c[1]-1]/rsig)
+            if (abs(Im[c[0],c[1]-1])==1) & (abs(Im[c[0]+1,c[1]-1])==1):
+                return
+            Im[c[0],c[1]-1]+=(w_E[c[0],c[1]-1]*Im[c]+w_SE[c[0],c[1]-1]*Im[c[0]+1,c[1]])/di[c[0],c[1]-1]
+            Im[c[0]+1,c[1]-1]+=(w_NE[c[0]+1,c[1]-1]*Im[c]+w_E[c[0]+1,c[1]-1]*Im[c[0]+1,c[1]]+w_N[c[0]+1,c[1]-1]*Im[c[0],c[1]-1])/di[c[0]+1,c[1]-1]
+            Im[c[0],c[1]-1] = np.tanh(  Im[c[0],c[1]-1] /rsig)
+            Im[c[0]+1,c[1]-1] = np.tanh(Im[c[0]+1,c[1]-1]/rsig)
             logger.debug('w %d %d'%c)
-            if np.logical_xor(Io[c[0],c[1]-1]>0,Io[c[0]+1,c[1]-1]>0) &(c[1]>1):
-                w_expa((c[0],c[1]-1))
-            if np.logical_xor(Io[c]>0,Io[c[0],c[1]-1]>0) &(c[0]>0):
-                n_expa(c)
-            if np.logical_xor(Io[c[0]+1,c[1]-1]>0,Io[c[0]+1,c[1]]>0) &(c[0]<I-2):
-                s_expa((c[0]+1,c[1]-1))
+            if np.logical_xor(Im[c[0],c[1]-1]>0,Im[c[0]+1,c[1]-1]>0) &(c[1]>1):
+                w_expa((c[0],c[1]-1),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
+            if np.logical_xor(Im[c]>0,Im[c[0],c[1]-1]>0) &(c[0]>0):
+                n_expa((c[0],c[1]-1),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
+            if np.logical_xor(Im[c[0]+1,c[1]-1]>0,Im[c[0]+1,c[1]]>0) &(c[0]<I-2):
+                s_expa((c[0]+1,c[1]-1),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
+            return
 
-        def e_expa(c):
+        def e_expa(c,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J):
             """c: center, top pixel of an edge, tuple"""
-            nonlocal Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J
-            Io[c[0],c[1]+1]=(w_W[c[0],c[1]+1]*Io[c]+w_SW[c[0],c[1]+1]*Io[c[0]+1,c[1]])/di[c[0],c[1]+1]
-            Io[c[0]+1,c[1]+1]=(w_NW[c[0]+1,c[1]+1]*Io[c]+w_W[c[0]+1,c[1]+1]*Io[c[0]+1,c[1]]+w_N[c[0]+1,c[1]+1]*Io[c[0],c[1]+1])/di[c[0]+1,c[1]+1]
-            Io[c[0],c[1]+1] = np.tanh(  Io[c[0],c[1]+1] /rsig)
-            Io[c[0]+1,c[1]+1] = np.tanh(Io[c[0]+1,c[1]+1]/rsig)
+            if (abs(Im[c[0],c[1]+1])==1) & (abs(Im[c[0]+1,c[1]+1])==1):
+                return
+            Im[c[0],c[1]+1]+=(w_W[c[0],c[1]+1]*Im[c]+w_SW[c[0],c[1]+1]*Im[c[0]+1,c[1]])/di[c[0],c[1]+1]
+            Im[c[0]+1,c[1]+1]+=(w_NW[c[0]+1,c[1]+1]*Im[c]+w_W[c[0]+1,c[1]+1]*Im[c[0]+1,c[1]]+w_N[c[0]+1,c[1]+1]*Im[c[0],c[1]+1])/di[c[0]+1,c[1]+1]
+            Im[c[0],c[1]+1] = np.tanh(  Im[c[0],c[1]+1] /rsig)
+            Im[c[0]+1,c[1]+1] = np.tanh(Im[c[0]+1,c[1]+1]/rsig)
             logger.debug('e %d %d'%c)
-            if np.logical_xor(Io[c[0],c[1]+1]>0,Io[c[0]+1,c[1]+1]>0) &(c[1]<J-2):
-                e_expa((c[0],c[1]+1))
-            if np.logical_xor(Io[c]>0,Io[c[0],c[1]+1]>0) &(c[0]>0):
-                n_expa(c)
-            if np.logical_xor(Io[c[0]+1,c[1]]>0,Io[c[0]+1,c[1]+1]>0) &(c[0]<I-2):
-                s_expa((c[0]+1,c[1]))
+            if np.logical_xor(Im[c[0],c[1]+1]>0,Im[c[0]+1,c[1]+1]>0) &(c[1]<J-2):
+                e_expa((c[0],c[1]+1),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
+            if np.logical_xor(Im[c]>0,Im[c[0],c[1]+1]>0) &(c[0]>0):
+                n_expa(c,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
+            if np.logical_xor(Im[c[0]+1,c[1]]>0,Im[c[0]+1,c[1]+1]>0) &(c[0]<I-2):
+                s_expa((c[0]+1,c[1]),Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
+            return
 
         # umax=.5
         pim= np.zeros((I+2,J+2))
@@ -398,13 +406,13 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
 
         # g f edge expand
         if np.logical_xor(Io[gc]>0,Io[gc[0],gc[1]+1]>0) &(gc[0]>0):
-            n_expa(gc)
+            n_expa(gc,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
         if np.logical_xor(Io[gc]>0,Io[gc[0]+1,gc[1]]>0) &(gc[1]>0):
-            w_expa(gc)
+            w_expa(gc,Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
         if np.logical_xor(Io[gc[0]+1,gc[1]]>0,Io[gc[0]+1,gc[1]+1]>0) &(gc[0]<I-2):
-            s_expa((gc[0]+1,gc[1]))
-        if np.logical_xor(Io[gc[0],gc[1]+1]>0,Io[gc[0]+1,gc[1]+1]>0) &(gc[1]<J-1):
-            e_expa((gc[0],gc[1]+1))
+            s_expa((gc[0]+1,gc[1]),Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
+        if np.logical_xor(Io[gc[0],gc[1]+1]>0,Io[gc[0]+1,gc[1]+1]>0) &(gc[1]<J-2):
+            e_expa((gc[0],gc[1]+1),Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
         return Io
 
     # img=ms_seq()
@@ -422,10 +430,6 @@ if __name__ == "__main__":
     # # im=im[4:14,5:15]
     # # im=im[5:,5:15]
     # # iph=im.reshape((*im.shape,1))
-    # # num_iter=100
-    # # option=1
-    # # delta_t=1/7
-    # # im=anisodiff2D(im,num_iter,delta_t,option)
     # iph=(im/np.sum(im)).reshape((*im.shape,1))
 
     data_path = os.path.join(os.getcwd(), 'photos')
@@ -433,6 +437,10 @@ if __name__ == "__main__":
     im_no = 0
     im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
     im = im[40:60, 10:50, :]
+    # im = Image.open(os.path.join(data_path, im_flist[im_no]))
+    # im = im.resize((np.array(im.size) / 10).astype(int))
+    # im = np.asarray(im)
+    # im = im[10:22, 10:50,:]
     ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
     iph = im / ime
 
@@ -441,9 +449,9 @@ if __name__ == "__main__":
     # # ig = msimg(iph, mcont=4)
     ig=msimg(copy.deepcopy(iph))
     # # ig=msimg(ig,rsig=.08)
-    blabels=ig
-    blabels[blabels>0]=1
-    blabels[blabels<0]=-1
+    # blabels=ig
+    # blabels[blabels>0]=1
+    # blabels[blabels<0]=-1
 
     ax = plt.subplot(121)
     # plt.imshow(im[:,:,0])
@@ -452,8 +460,8 @@ if __name__ == "__main__":
     plt.colorbar(orientation='horizontal')
     ax = plt.subplot(122)
     # plt.imshow(np.square(ig[:,:,0])*np.sum(im))
-    # plt.imshow(ig)
-    plt.imshow(blabels,cmap='gray')
+    plt.imshow(ig)
+    # plt.imshow(blabels,cmap='gray')
     ax.set_title('blabel')
     plt.colorbar(orientation='horizontal')
 

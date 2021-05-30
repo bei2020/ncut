@@ -28,7 +28,6 @@ python recipt_seg.py
 ### binary label
 `ms_bina.py`
 
-![bina](imgs/butt_bina.png)
 ![bina](imgs/butt_edge_bina.png)
 
 ## ncut with eigensolver Lanczos
