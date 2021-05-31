@@ -11,8 +11,8 @@ import logging
 FORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('ms')
-logger.setLevel('INFO')
-# logger.setLevel('DEBUG')
+# logger.setLevel('INFO')
+logger.setLevel('DEBUG')
 
 def SE_expa(ground_center,Im,w_N,w_NE,w_W,w_NW,di):
     """gc heat expand in S,E directions"""
@@ -251,6 +251,9 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         w[gloc[0],gloc[1]]=0
         w[floc[0],floc[1]]=0
 
+    xv, yv = np.meshgrid(np.arange(I), np.arange(J))
+    xv=xv.T
+    yv=yv.T
     def ms_seq():
         """Return binary img."""
         nonlocal w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,gloc,floc,di,rsig
@@ -311,7 +314,7 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         return Io
 
     def edge_seq():
-        nonlocal w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,gloc,floc,di,rsig
+        nonlocal w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,gloc,floc,di,rsig,xv,yv
         def n_expa(c,Im,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J):
             """c: center, left pixel of an edge, tuple"""
             if (abs(Im[c[0]-1,c[1]])==1) & (abs(Im[c[0]-1,c[1]+1])==1):
@@ -413,7 +416,21 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
             s_expa((gc[0]+1,gc[1]),Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
         if np.logical_xor(Io[gc[0],gc[1]+1]>0,Io[gc[0]+1,gc[1]+1]>0) &(gc[1]<J-2):
             e_expa((gc[0],gc[1]+1),Io,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J)
-        return Io
+
+        Io[Io>0]=1
+        Io[Io<0]=-1
+        ax = plt.subplot(111)
+        plt.imshow(Io)
+        ax.set_title('edge')
+        plt.colorbar(orientation='horizontal')
+        plt.show()
+
+        #pixel =nearest edge pixel
+        emsk=abs(Io)==1
+        xvn = xv[np.logical_not(emsk)]
+        dxy=abs(xvn.reshape(xvn.shape[0],1) - xv[emsk].reshape(1,I*J-xvn.shape[0])) + abs(yv[np.logical_not(emsk)].reshape(xvn.shape[0],1) - yv[emsk].reshape(1,I*J-xvn.shape[0]))
+        Io[np.logical_not(emsk)]=np.matmul((dxy==np.min(dxy,1).reshape(xvn.shape[0],1)).astype('int'),Io[emsk])
+        return (Io>0).astype('int')
 
     # img=ms_seq()
     # return img
@@ -449,9 +466,6 @@ if __name__ == "__main__":
     # # ig = msimg(iph, mcont=4)
     ig=msimg(copy.deepcopy(iph))
     # # ig=msimg(ig,rsig=.08)
-    # blabels=ig
-    # blabels[blabels>0]=1
-    # blabels[blabels<0]=-1
 
     ax = plt.subplot(121)
     # plt.imshow(im[:,:,0])
@@ -462,7 +476,7 @@ if __name__ == "__main__":
     # plt.imshow(np.square(ig[:,:,0])*np.sum(im))
     plt.imshow(ig)
     # plt.imshow(blabels,cmap='gray')
-    ax.set_title('blabel')
+    ax.set_title('one part')
     plt.colorbar(orientation='horizontal')
 
     # ax = plt.subplot(233)
