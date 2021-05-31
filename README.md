@@ -29,7 +29,6 @@ python recipt_seg.py
 `ms_bina.py`
 
 ![bina](imgs/butt_edge_bina.png)
-![bina](imgs/butt_edge_bina_part.png)
 
 ## ncut with eigensolver Lanczos
 `segment.py`
