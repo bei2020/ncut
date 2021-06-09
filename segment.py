@@ -49,9 +49,14 @@ def img_lap(img,rsig=.1):
     if len(img.shape)==2:
         I,J=img.shape
         N=I*J
-        w1=edge_weight_g(img[:,:-1]-img[:,1:],rsig)
-        w2=edge_weight_g(img[:-1,:-1]-img[1:,1:],rsig)
-        w3=edge_weight_g(img[:-1,:]-img[1:,],rsig)
+        g1=img[:,:-1]-img[:,1:]
+        g2=img[:-1,:-1]-img[1:,1:]
+        g3=img[:-1,:]-img[1:,]
+        rsig = grad_m(np.concatenate((g1.flatten(),g2.flatten(),g3.flatten())))
+        print('rsig %f'%rsig)
+        w1=edge_weight_g(g1,rsig)
+        w2=edge_weight_g(g2,rsig)
+        w3=edge_weight_g(g3,rsig)
     else:
         I,J,K=img.shape
         N=I*J
@@ -60,9 +65,9 @@ def img_lap(img,rsig=.1):
         g3=img[:-1,:]-img[1:,]
         rsig = grad_m(np.concatenate((g1.flatten(),g2.flatten(),g3.flatten())))
         print('rsig %f'%rsig)
-        w1=edge_weight(img[:,:-1]-img[:,1:],rsig)
-        w2=edge_weight(img[:-1,:-1]-img[1:,1:],rsig)
-        w3=edge_weight(img[:-1,:]-img[1:,],rsig)
+        w1=edge_weight(g1,rsig)
+        w2=edge_weight(g2,rsig)
+        w3=edge_weight(g3,rsig)
 
     l=np.arange(I*J).reshape(I,J)
     w1i=l[:,:-1].flatten()
@@ -237,28 +242,29 @@ if __name__=="__main__":
     # # 3 partition image
     # sample3part_seg()
 
-    # with open('imgs/tri_part','rb') as f:
-    #     im=np.load(f)
-    # im=im[4:12,5:10]
+    with open('imgs/tri_part','rb') as f:
+        im=np.load(f)
+    im=im[4:12,5:10]
+    im=im/np.sum(im)
     # ax=plt.subplot(2,2,1)
     # plt.imshow(im,cmap='gray')
     # ax.set_title('centered image')
     # plt.colorbar(orientation='horizontal')
     # plt.show()
 
-    data_path = os.path.join(os.getcwd(), 'photos')
-    im_flist = os.listdir(data_path)
-    im_no = 2
-    # img = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
-    im = Image.open(os.path.join(data_path, im_flist[im_no]))
-    im = im.resize((np.array(im.size) / 10).astype(int))
-    im = np.asarray(im)
-    im = im[10:22, 10:50,:]
-    # # im=im[110:150,140:190,:]
-    # im = img[40:60, 10:50, :]
-    # # im = im[40:50, 10:20, :]
-    ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
-    im = im / ime
+    # data_path = os.path.join(os.getcwd(), 'photos')
+    # im_flist = os.listdir(data_path)
+    # im_no = 2
+    # # img = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
+    # im = Image.open(os.path.join(data_path, im_flist[im_no]))
+    # im = im.resize((np.array(im.size) / 10).astype(int))
+    # im = np.asarray(im)
+    # im = im[10:22, 10:50,:]
+    # # # im=im[110:150,140:190,:]
+    # # im = img[40:60, 10:50, :]
+    # # # im = im[40:50, 10:20, :]
+    # ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
+    # im = im / ime
 
     if len(im.shape)==2:
         I,J=im.shape
@@ -268,7 +274,7 @@ if __name__=="__main__":
     l=np.arange(N).reshape(I,J)
     L,D=img_lap(im)
     d = np.diag(D)
-    Ls=np.multiply(np.multiply((d**(-1/2)).reshape(N, 1), L), (d**(-1/2)).reshape(1, N))
+    # Ls=np.multiply(np.multiply((d**(-1/2)).reshape(N, 1), L), (d**(-1/2)).reshape(1, N))
     # w,v=eiges(Ls,k=50)
 
     # with open('test/tri_centered_SMeigs4_lap3d','wb') as f:
@@ -277,12 +283,13 @@ if __name__=="__main__":
     # with open('test/tri_centered_SMeigs5','rb') as f:
     #     w=np.load(f)
     #     v= np.load(f)
-    w,v=eigs(L,k=11,M=D,which='SM')
+    w,v=eigs(L,k=6,M=D,which='SM')
     w=w.astype(np.float)
     v=v.astype(np.float)
 
-    row=3
-    plot_eigs(w[:11],v[:,:11],shape=(I,J),row=row)
+    row=2
+    plot_eigs(w,v,shape=(I,J),row=row)
+    # plot_eigs(w[:11],v[:,:11],shape=(I,J),row=row)
     # plot_eigs(w[:7],v[:,:7],shape=(I,J),row=row)
     ax=plt.subplot(row,4,row*4)
     # plt.imshow(img[10:22, 10:50,:])
