@@ -198,6 +198,8 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         # g f heat expand
         Io=SE_ps(gloc,Io,ps,pr,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,asig,I,J)
         Io=SE_ps(floc,Io,ps,pr,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,asig,I,J)
+        #normalize
+        Io=Io-np.mean(Io)
 
         Io = np.tanh(Io/asig)
         ax = plt.subplot(111)
@@ -251,43 +253,5 @@ if __name__ == "__main__":
     # plt.imshow(blabels,cmap='gray')
     ax.set_title('one part')
     plt.colorbar(orientation='horizontal')
-
-    # ax = plt.subplot(233)
-    # plt.imshow(blabels[:, :, 0])
-    # ax.set_title('ib')
-    # plt.colorbar(orientation='horizontal')
-
-    # cmsk=np.sum(blabels,-1).astype('bool') # cut nodes mask
-    # iph[cmsk] = -np.inf
-    # iph[cmsk] = 0
-    # ig=msimg(copy.deepcopy(iph),rsig=.1,mcont=4)
-    # ig[cmsk] = -np.inf
-    # prob = 1 / (1 + np.exp(-ig[:,:,ch]))
-    # blabels[:,:,1] = (prob > np.random.rand(*prob.shape)).astype('int')
-    #
-    # ax=plt.subplot(234)
-    # # plt.imshow(ig[:,:,0])
-    # plt.imshow(ig[:,:,0]/np.sum(ig[:,:,0])*np.sum(im))
-    # # ax.set_title('ch%d iph01'%ch)
-    # plt.colorbar(orientation='horizontal')
-    # ax=plt.subplot(235)
-    # plt.imshow(blabels[:,:,1])
-    # ax.set_title('seg01 .1 4000')
-    # plt.colorbar(orientation='horizontal')
-    #
-    # cmsk=np.sum(blabels,-1).astype('bool')
-    # iph[cmsk] = -np.inf
-    # iph[cmsk] = 0
-    # ig=msimg(copy.deepcopy(iph),rsig=.3,mcont=2)
-    # ig[cmsk] = -np.inf
-    # mct=np.einsum('ijk->k',ig==np.max(ig,-1).reshape(I,J,1).astype('int'))
-    # ch=np.arange(K)[mct==np.max(mct)][0]
-    # prob = 1 / (1 + np.exp(-ig[:,:,ch]))
-    # blabels[:,:,2] = (prob > np.random.rand(*prob.shape)).astype('int')
-    #
-    # ax=plt.subplot(236)
-    # plt.imshow(ig[:,:,ch])
-    # ax.set_title('ch%d iph001 .3 2000'%ch)
-    # plt.colorbar(orientation='horizontal')
 
     plt.show()
