@@ -17,74 +17,80 @@ logger.setLevel('INFO')
 def SE_pe(gc,ps,Ip,w_W,w_N,w_NW,di,rsig):
     """Return heat expanded patch.
     gc: ground center,heat source in a patch.
-    ps: int,patch size=ps*ps
+    ps: int,patch size=ps*ps, or array((i,j)),patch size=i*j
     """
     logger.debug('pe Ip%d %d'%Ip.shape)
-    for i in range(1,ps):
+    if isinstance(ps,np.int64):
+        ps=(ps,ps)
+    elif not isinstance(ps,(np.ndarray,tuple)):
+        logger.debug('ps type %s'%type(ps))
+        print(ps)
+    for i in range(1,ps[1]):
         Ip[0,i]+=w_W[0,i]*Ip[0,i-1]/di[0,i]
+    for i in range(1,ps[0]):
         Ip[i,0]+=w_N[i,0]*Ip[i-1,0]/di[i,0]
     #skew patch
-    pa=np.zeros((2*ps-1,2*ps-1))
-    for i in range(ps):
-        pa[i,i:i+ps]=Ip[i,:]
-    wp_W=np.zeros((2*ps-1,2*ps-1))
-    for i in range(ps):
-        wp_W[i,i:i+ps]=w_W[i,:]
-    wp_N=np.zeros((2*ps-1,2*ps-1))
-    for i in range(ps):
-        wp_N[i,i:i+ps]=w_N[i,:]
-    wp_NW=np.zeros((2*ps-1,2*ps-1))
-    for i in range(ps):
-        wp_NW[i,i:i+ps]=w_NW[i,:]
-    dip=np.zeros((2*ps-1,2*ps-1))
-    for i in range(ps):
-        dip[i,i:i+ps]=di[i,:]
+    pa=np.zeros((ps[0],ps[0]-1+ps[1]))
+    for i in range(ps[0]):
+        pa[i,i:i+ps[1]]=Ip[i,:]
+    wp_W=np.zeros((ps[0],ps[0]-1+ps[1]))
+    for i in range(ps[0]):
+        wp_W[i,i:i+ps[1]]=w_W[i,:]
+    wp_N=np.zeros((ps[0],ps[0]-1+ps[1]))
+    for i in range(ps[0]):
+        wp_N[i,i:i+ps[1]]=w_N[i,:]
+    wp_NW=np.zeros((ps[0],ps[0]-1+ps[1]))
+    for i in range(ps[0]):
+        wp_NW[i,i:i+ps[1]]=w_NW[i,:]
+    dip=np.zeros((ps[0],ps[0]-1+ps[1]))
+    for i in range(ps[0]):
+        dip[i,i:i+ps[1]]=di[i,:]
 
-    for i in range(1,ps):
-        pa[1:i+1,i+1]+=(pa[1:i+1,i]*wp_W[1:i+1,i+1]+pa[:i,i]*wp_N[1:i+1,i+1]+pa[:i,i-1]*wp_NW[1:i+1,i+1])/dip[1:i+1,i+1]
-    for i in  range(1,ps):
-        pa[i:,i+ps-1]+=(pa[i:,i+ps-2]*wp_W[i:,i+ps-1]+pa[i-1:-1,i+ps-2]*wp_N[i:,i+ps-1]+pa[i-1:-1,i+ps-3]*wp_NW[i:,i+ps-1])/dip[i:,i+ps-1]
+    for j in range(2,pa.shape[1]):
+        ist=max(j -ps[1]+1, 1)
+        ied=min(ps[0], j)
+        pa[ist:ied, j]+=(pa[ist:ied, j-1]*wp_W[ist:ied, j]+pa[ist-1:ied-1, j-1]*wp_N[ist:ied, j]+pa[ist-1:ied-1, j-2]*wp_NW[ist:ied, j])/dip[ist:ied, j]
 
-    for i in range(ps):
-        Ip[i,:]=pa[i,i:i+ps]
+    for i in range(ps[0]):
+        Ip[i,:]=pa[i,i:i+ps[1]]
     Ip = np.tanh(Ip/rsig)
     return Ip
 
 def SE_ps(ground_center,Im,ps,pr,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J):
     """Return SE direction heat expanded image.
-    ps: int, sequence fixed length*2,patch size=ps*ps."""
+    ps: array((i,j)), sequence fixed length*2,patch size=i*j."""
     c=[*ground_center]
-    nsi=(I-c[0])//pr
-    nsj=(J-c[1])//pr
+    nsi=(I-c[0])//pr[0]
+    nsj=(J-c[1])//pr[1]
     logger.info('pgc %d %d,nsi %d,nsj %d,asig %f'%(*ground_center,nsi,nsj,rsig))
     for i in range(1,nsi):
         for j in range(1,nsj):
             logger.debug('ploc %d %d'%(c[0],c[1]))
-            Im[c[0]:c[0]+ps,c[1]:c[1]+ps]=SE_pe(c,ps,Im[c[0]:c[0]+ps,c[1]:c[1]+ps],w_W[c[0]:c[0]+ps,c[1]:c[1]+ps],w_N[c[0]:c[0]+ps,c[1]:c[1]+ps],w_NW[c[0]:c[0]+ps,c[1]:c[1]+ps],di[c[0]:c[0]+ps,c[1]:c[1]+ps],rsig)
-            c[1]+=pr
-        if c[1]<J-pr:
+            Im[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]]=SE_pe(c,ps,Im[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],w_W[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],w_N[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],w_NW[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],di[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],rsig)
+            c[1]+=pr[1]
+        if c[1]<J-pr[1]:
             logger.debug('p margin loc %d %d'%(c[0],c[1]))
             psm=J-c[1]
-            Im[c[0]:c[0]+psm,c[1]:c[1]+psm]=SE_pe(c,J-c[1],Im[c[0]:c[0]+psm,c[1]:c[1]+psm],w_W[c[0]:c[0]+psm,c[1]:c[1]+psm],w_N[c[0]:c[0]+psm,c[1]:c[1]+psm],w_NW[c[0]:c[0]+psm,c[1]:c[1]+psm],di[c[0]:c[0]+psm,c[1]:c[1]+psm],rsig)
-        c[0]+=pr
+            Im[c[0]:c[0]+ps[0],c[1]:c[1]+psm]=SE_pe(c,(ps[0],psm),Im[c[0]:c[0]+ps[0],c[1]:c[1]+psm],w_W[c[0]:c[0]+ps[0],c[1]:c[1]+psm],w_N[c[0]:c[0]+ps[0],c[1]:c[1]+psm],w_NW[c[0]:c[0]+ps[0],c[1]:c[1]+psm],di[c[0]:c[0]+ps[0],c[1]:c[1]+psm],rsig)
+        c[0]+=pr[0]
         c[1]=ground_center[1]
         ax = plt.subplot(111)
         plt.imshow(Im)
         ax.set_title('Iop')
         plt.colorbar(orientation='horizontal')
         plt.show()
-    if c[0]<I-pr:
+    if c[0]<I-pr[0]:
         logger.debug('p margin loc %d %d'%(c[0],c[1]))
         psm=I-c[0]
-        prm=psm//2
-        nsj=(J-c[1])//prm
+        # prm=psm//2
+        # nsj=(J-c[1])//prm
         for j in range(1,nsj):
-            Im[c[0]:c[0]+psm,c[1]:c[1]+psm]=SE_pe(c,psm,Im[c[0]:c[0]+psm,c[1]:c[1]+psm],w_W[c[0]:c[0]+psm,c[1]:c[1]+psm],w_N[c[0]:c[0]+psm,c[1]:c[1]+psm],w_NW[c[0]:c[0]+psm,c[1]:c[1]+psm],di[c[0]:c[0]+psm,c[1]:c[1]+psm],rsig)
-            c[1]+=prm
-        if c[1]<J-prm:
+            Im[c[0]:c[0]+psm,c[1]:c[1]+ps[1]]=SE_pe(c,(psm,ps[1]),Im[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],w_W[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],w_N[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],w_NW[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],di[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],rsig)
+            c[1]+=pr[1]
+        if c[1]<J-pr[1]:
             logger.debug('p margin loc %d %d'%(c[0],c[1]))
-            psm=J-c[1]
-            Im[c[0]:c[0]+psm,c[1]:c[1]+psm]=SE_pe(c,J-c[1],Im[c[0]:c[0]+psm,c[1]:c[1]+psm],w_W[c[0]:c[0]+psm,c[1]:c[1]+psm],w_N[c[0]:c[0]+psm,c[1]:c[1]+psm],w_NW[c[0]:c[0]+psm,c[1]:c[1]+psm],di[c[0]:c[0]+psm,c[1]:c[1]+psm],rsig)
+            psmj=J-c[1]
+            Im[c[0]:c[0]+psm,c[1]:c[1]+psmj]=SE_pe(c,(psm,psmj),Im[c[0]:c[0]+psm,c[1]:c[1]+psmj],w_W[c[0]:c[0]+psm,c[1]:c[1]+psmj],w_N[c[0]:c[0]+psm,c[1]:c[1]+psmj],w_NW[c[0]:c[0]+psm,c[1]:c[1]+psmj],di[c[0]:c[0]+psm,c[1]:c[1]+psmj],rsig)
         # ax = plt.subplot(111)
         # plt.imshow(Im)
         # ax.set_title('Iopm')
@@ -190,7 +196,7 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         """Return binary img."""
         nonlocal w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,gloc,floc,di,asig
         # umax=.5
-        ps=6
+        ps=np.array((10,8))
         pr=ps//2
         Io= np.zeros((I,J))
         Io[floc[0],floc[1]] = 1
@@ -226,7 +232,7 @@ if __name__ == "__main__":
 
     data_path = os.path.join(os.getcwd(), 'photos')
     im_flist = os.listdir(data_path)
-    im_no = 0
+    im_no = 2
     im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
     im = im[40:60, 10:50, :]
     # im = Image.open(os.path.join(data_path, im_flist[im_no]))

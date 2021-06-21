@@ -195,7 +195,8 @@ if __name__=="__main__":
     im_flist = os.listdir(data_path)
     im_no = 1
     ims = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
-    im=ims[100:300,:300,2]
+    # im=ims[100:300,:300,2]
+    im=ims[:,:,0]
 
     im=im/np.sum(im)
     I, J = im.shape
@@ -241,7 +242,8 @@ if __name__=="__main__":
         plt.colorbar(orientation='horizontal')
         ax=plt.subplot(122)
         # plt.imshow(ims[100:300,:300],cmap='Blues')
-        plt.imshow(Dq[0],cmap='Blues')
+        # plt.imshow(Dq[0],cmap='Blues')
+        plt.imshow(im,cmap='Blues')
         ax.set_title('sample')
         plt.colorbar(orientation='horizontal')
         plt.show()
