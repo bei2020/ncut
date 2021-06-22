@@ -197,7 +197,7 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         nonlocal w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,gloc,floc,di,asig
         # umax=.5
         ps=np.array((10,8))
-        pr=ps//2
+        pr=ps//2#stride
         Io= np.zeros((I,J))
         Io[floc[0],floc[1]] = 1
         Io[gloc[0],gloc[1]] = -1
