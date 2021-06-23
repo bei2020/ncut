@@ -1,19 +1,18 @@
 # ncut instance segmentation
 
-## 复现 Ref1
-ncut of 3 partitions `segment.py`
+## ncut
+3 partitions `segment.py`
 ![sample3p](imgs/sample3parts.png)
  
 ncut with eigensolver Lanczos `segment.py`
 ![lanc](imgs/butt_lanc_pair_iter2000_w30.png)
 ![lanc](imgs/rece_lanc_pair_iter2000_w50.png)
 
-## 复现 Ref3
-edge detection
+## edge detection
 ![zero crossing](imgs/reci2-2_Dog_sig2_minmax1.png)
 
-## 复现 Ref2
-denoise `cluster.py`
+## pixel label
+`cluster.py`
 ![denoise](imgs/butt_denoise.png)
 ### binary label
 `ms_bina.py`
