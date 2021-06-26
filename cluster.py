@@ -117,6 +117,7 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
             # img-=c.reshape((1,1,K))/(I*J)/di.reshape((I,J,1))
             # c=np.sum(np.multiply(img**2,di.reshape((I,J,1))),axis=(0,1))
             # img/=(c**(1/2)).reshape((1,1,K))
+        return
 
     def msconti(ncont=0, mcont=12):
         nonlocal pim
@@ -143,6 +144,7 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
             ncont += 1
             msiter(niter=1000)
             msconti(ncont, mcont)
+        return
 
     msiter()
     msconti(mcont=mcont)
