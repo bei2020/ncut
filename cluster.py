@@ -147,56 +147,25 @@ if __name__ == "__main__":
     # prob = 1 / (1 + np.exp(-ig[:,:,ch]))
     # blabels[:,:,0] = (prob > np.random.rand(*prob.shape)).astype('int')
 
-    ax = plt.subplot(231)
+    ax = plt.subplot(131)
     # plt.imshow(im[:,:,0])
     plt.imshow(im)
     ax.set_title('sample')
     plt.colorbar(orientation='horizontal')
-    ax = plt.subplot(232)
+    ax = plt.subplot(132)
     # plt.imshow(np.square(ig[:,:,0])*np.sum(im))
     plt.imshow(ig[:, :, 0])
     ax.set_title('ig')
     plt.colorbar(orientation='horizontal')
-    # ax=plt.subplot(233)
+    # ax=plt.subplot(133)
     # plt.imshow(blabels[:,:,0])
     # ax.set_title('seg1 4000')
     # plt.colorbar(orientation='horizontal')
 
-    ax = plt.subplot(233)
+    ax = plt.subplot(133)
     plt.imshow(iph[:, :, 0])
     ax.set_title('iph')
     plt.colorbar(orientation='horizontal')
 
-    # cmsk=np.sum(blabels,-1).astype('bool') # cut nodes mask
-    # iph[cmsk] = -np.inf
-    # iph[cmsk] = 0
-    # ig=msimg(copy.deepcopy(iph),rsig=.1,mcont=4)
-    # ig[cmsk] = -np.inf
-    # prob = 1 / (1 + np.exp(-ig[:,:,ch]))
-    # blabels[:,:,1] = (prob > np.random.rand(*prob.shape)).astype('int')
-    #
-    # ax=plt.subplot(234)
-    # plt.imshow(ig[:,:,0])
-    # ax.set_title('ch%d iph01'%ch)
-    # plt.colorbar(orientation='horizontal')
-    # ax=plt.subplot(235)
-    # plt.imshow(blabels[:,:,1])
-    # ax.set_title('seg01 .1 4000')
-    # plt.colorbar(orientation='horizontal')
-    #
-    # cmsk=np.sum(blabels,-1).astype('bool')
-    # iph[cmsk] = -np.inf
-    # iph[cmsk] = 0
-    # ig=msimg(copy.deepcopy(iph),rsig=.3,mcont=2)
-    # ig[cmsk] = -np.inf
-    # mct=np.einsum('ijk->k',ig==np.max(ig,-1).reshape(I,J,1).astype('int'))
-    # ch=np.arange(K)[mct==np.max(mct)][0]
-    # prob = 1 / (1 + np.exp(-ig[:,:,ch]))
-    # blabels[:,:,2] = (prob > np.random.rand(*prob.shape)).astype('int')
-    #
-    # ax=plt.subplot(236)
-    # plt.imshow(ig[:,:,ch])
-    # ax.set_title('ch%d iph001 .3 2000'%ch)
-    # plt.colorbar(orientation='horizontal')
 
     plt.show()
