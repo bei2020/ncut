@@ -107,10 +107,10 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
             if np.max(abs(pgp[1:-1,1:-1,:]))<ZEROTH:
                 logger.info('iter%d gp=0'%i)
                 break
-        print('end gp %f %f'%(np.mean(pgp),np.max(abs(pgp))))
+        print('end%d gp %f %f'%(i,np.mean(pgp),np.max(abs(pgp))))
         return img
 
-    img=msiter()
+    img=msiter(1000*mcont)
     return img
 
 
@@ -126,11 +126,12 @@ if __name__ == "__main__":
 
     data_path = os.path.join(os.getcwd(), 'photos')
     im_flist = os.listdir(data_path)
-    im_no = 2
+    im_no = 3
     im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
     # im=im[110:150,140:190,:]
     # im = im[180:280, 100:150, :]
-    im= im[400:440, 610:650, :]
+    # im= im[400:440, 610:650, :]
+    im = im[40:60, 10:50, :]
     ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
     iph = im / ime
     # iph[iph == 0] = .0000001 / np.sum(ime)
@@ -139,7 +140,7 @@ if __name__ == "__main__":
     I, J, K = iph.shape
     l = np.arange(I * J).reshape(I, J)
     # ig = msimg(iph, mcont=4)
-    ig=msimg(copy.deepcopy(iph),mcont=4)
+    ig=msimg(copy.deepcopy(iph),mcont=5)
     # ig=msimg(ig,rsig=.08)
 
     # blabels=np.zeros((I,J,6))
