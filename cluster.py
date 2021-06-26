@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
     # with open('imgs/tri_part','rb') as f:
     #     im=np.load(f)
-    # im=im[4:14,5:15]
+    # # im=im[4:14,5:15]
     # # iph=im.reshape((*im.shape,1))
     # iph=(im/np.sum(im)).reshape((*im.shape,1))
     # iph=np.sqrt(iph).reshape((*im.shape,1))
