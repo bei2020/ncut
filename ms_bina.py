@@ -1,18 +1,11 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from anisodiff2D import anisodiff2D
 import os
 import matplotlib.image as mpimg
-from PIL import Image
 from segment import edge_weight,grad_m
 import copy
 from time import gmtime, strftime
-import logging
-FORMAT = '%(asctime)-15s %(message)s'
-logging.basicConfig(format=FORMAT)
-logger = logging.getLogger('ms')
-logger.setLevel('INFO')
-# logger.setLevel('DEBUG')
+from settings import logger
 
 def SE_pe(gc,ps,Ip,w_W,w_N,w_NW,di,rsig):
     """Return heat expanded patch.
