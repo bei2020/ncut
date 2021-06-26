@@ -5,6 +5,7 @@ from segment import edge_weight,grad_m
 import copy
 import os
 from time import gmtime, strftime
+from settings import logger,ZEROTH
 
 
 def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
@@ -13,11 +14,6 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     I, J, K = img.shape
     pim = np.concatenate((np.zeros((1,J,K)), img, np.zeros((1,J,K))), axis=0) #padding
     pim = np.concatenate((np.zeros((I+2,1,K)), pim,np.zeros((I+2,1,K))), axis=1)
-    gamma = .9
-    alpha = .99
-    lamb = 1e-5
-    v = np.zeros((I+2,J+2,K))
-    Vp = 0
     if init_wt == 1:
         nint = 2
         # 1234:ESWN, Io: DHWC, D=8 directions
@@ -76,18 +72,7 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         cur = Iok - Io
         fn = 'wt_rsig%f_%s' % (rsig, fn)
         with open('%s.npy' % fn, 'wb') as f:
-            np.save(f, np.hstack((w_E,w_S,w_SE,w_NE)))
-
-            # gloc=np.argmin(di[1:-1,1:-1])
-            # gloc = (gloc // (J - 2) + 1, gloc % (J - 2) + 1)
-            # print('gloc %d %d'%(gloc[0],gloc[1]))
-            # floc=np.argmin(wt[:,gloc[0],gloc[1]])
-            # floc=(gloc[0]+lij[floc][0],gloc[1]+lij[floc][1])
-            # print('floc %d %d'%(floc[0],floc[1]))
-            # fi = np.zeros((I,J,K))
-            # fi[floc[0],floc[1],:] = 1
-            # fi[gloc[0],gloc[1],:] = -1
-            # img[gloc[0],gloc[1],:]=0
+            np.save(f, np.stack((w_E,w_S,w_SE,w_NE)))
     else:
         fn = 'wt_rsig%f_%s' % (rsig, fn)
         a = rsig ** 2 / (K + 2)
@@ -98,77 +83,55 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         w_N = np.vstack((np.zeros((1, J)), w_S[:-1, :,]))
         w_NW = np.hstack((np.zeros((I, 1)),np.vstack((np.zeros((1, J - 1)), w_SE[:-1,:-1]))))
         w_SW = np.hstack((np.zeros((I, 1)), np.vstack((w_NE[1:,:-1], np.zeros((1, J - 1))))))
+        di=np.sum(np.stack((w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW),0),0)
 
     def msiter(niter=1000):
-        nonlocal pim, v, Vp, w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW, cur
-        # wt[:,gloc[0],gloc[1]]=0
-        # wt[:,floc[0],floc[1]]=0
+        global ZEROTH
+        nonlocal pim,img, w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW
+        Io= (np.multiply(w_E.reshape(I,J,1), pim[1:-1, 2:, :])+np.multiply(w_S.reshape(I,J,1), pim[2:, 1:-1, :])+np.multiply(w_W.reshape(I,J,1), pim[1:-1, :J, :]) \
+                            + np.multiply( w_N.reshape(I,J,1), pim[:I, 1:-1, :])+np.multiply(w_SE.reshape(I,J,1), pim[2:, 2:, :])+np.multiply(w_NE.reshape(I,J,1), pim[:I, 2:, :] ) \
+                            + np.multiply( w_NW.reshape(I,J,1), pim[:I, :J, :]) + np.multiply(w_SW.reshape(I,J,1), pim[2:, :J, :]))/di.reshape((I, J, 1))
+
+        gp = Io - pim[1:-1,1:-1,:]
+        logger.info('gp %f %f'%(np.mean(gp),np.max(abs(gp))))
+        img+= gp
+        pgp = np.concatenate((np.zeros((1,J,K)), gp, np.zeros((1,J,K))), axis=0) #padding
+        pgp = np.concatenate((np.zeros((I+2,1,K)), pgp,np.zeros((I+2,1,K))), axis=1)
         for i in range(niter):
-            Io = (np.multiply(w_E.reshape(I,J,1), pim[1:-1, 2:, :]+ gamma * v[1:-1, 2:, :]) + np.multiply(w_S.reshape(I,J,1), pim[2:, 1:-1, :]+ gamma * v[2:, 1:-1, :]) + np.multiply(w_W.reshape(I,J,1), pim[1:-1, :J, :]+ gamma * v[1:-1, :J, :]) \
-                  + np.multiply( w_N.reshape(I,J,1), pim[:I, 1:-1, :]+ gamma * v[:I, 1:-1, :]) + np.multiply(w_SE.reshape(I,J,1), pim[2:, 2:, :]+ gamma * v[2:, 2:, :]) + np.multiply(w_NE.reshape(I,J,1), pim[:I, 2:, :]+ gamma * v[:I, 2:, :]) \
-                  + np.multiply( w_NW.reshape(I,J,1), pim[:I, :J, :]+ gamma * v[:I, :J, :]) + np.multiply(w_SW.reshape(I,J,1), pim[2:, :J, :]+ gamma * v[2:, :J, :]))/di.reshape((I, J, 1))
-            # gp = Io - (img + gamma * v[1:-1,1:-1,:])
-            gp = Io - (pim + gamma * v)[1:-1,1:-1,:]
-            Vp = alpha * Vp + (1 - alpha) * gp ** 2
-            Gp = 1 / (lamb + np.sqrt(Vp))
-            v[1:-1,1:-1,:] = gamma * v[1:-1,1:-1,:] + a * (np.multiply(Gp, gp) + cur)
-            pim += v
-            # c=np.sum(np.multiply(img,di.reshape((I,J,1))),axis=(0,1))
-            # img-=c.reshape((1,1,K))/(I*J)/di.reshape((I,J,1))
-            # c=np.sum(np.multiply(img**2,di.reshape((I,J,1))),axis=(0,1))
-            # img/=(c**(1/2)).reshape((1,1,K))
+            pgp[1:-1,1:-1,:] = (np.multiply(w_E.reshape(I,J,1), pgp[1:-1, 2:, :])+np.multiply(w_S.reshape(I,J,1), pgp[2:, 1:-1, :])+np.multiply(w_W.reshape(I,J,1), pgp[1:-1, :J, :]) \
+                  + np.multiply( w_N.reshape(I,J,1), pgp[:I, 1:-1, :])+np.multiply(w_SE.reshape(I,J,1), pgp[2:, 2:, :])+np.multiply(w_NE.reshape(I,J,1), pgp[:I, 2:, :] ) \
+                  + np.multiply( w_NW.reshape(I,J,1), pgp[:I, :J, :]) + np.multiply(w_SW.reshape(I,J,1), pgp[2:, :J, :]))/di.reshape((I, J, 1))
 
-    def msconti(ncont=0, mcont=12):
-        nonlocal pim
-        imgc = copy.deepcopy(pim)
-        msiter(10)
-        if np.array_equal(np.round(np.exp(pim),8),np.round(np.exp(imgc),8)):
-        # ginf=1e-12
-        # if np.sum(np.square((pim-imgc)[1:-1,1:-1,:]))<ginf:
-            print('fix found continue iter %d' % (ncont * 1000))
-            print(np.round(pim[:10, :10, 0], 6))
-            print(np.round(v[1:-1, 1:-1, 0], 6))
-            # print('ground ',pim[gloc[0],gloc[1],:])
-            return
-        else:
-            if ncont == mcont:
-                print('no fix after continue iter %d' % (ncont * 1000))
-                print(np.round(pim[:10, :10, 0], 6))
-                print(np.round(imgc[:10, :10, 0], 6))
-                # print('ground ',img[gloc[0],gloc[1],:])
-                # print(np.round(np.exp(img[:10,:10,0]), 6))
-                # print(np.round(np.exp(imgc[:10,:10,0]), 6))
-                return
-            print('continue')
-            ncont += 1
-            msiter(niter=1000)
-            msconti(ncont, mcont)
+            # pgp[1:-1,1:-1,:] =pgp[1:-1,1:-1,:]+ (Io - pgp[1:-1,1:-1,:])
+            img+= pgp[1:-1,1:-1,:]
+            if np.max(abs(pgp[1:-1,1:-1,:]))<ZEROTH:
+                logger.info('iter%d gp=0'%i)
+                break
+        print('end%d gp %f %f'%(i,np.mean(pgp),np.max(abs(pgp))))
+        return img
 
-    msiter()
-    msconti(mcont=mcont)
-    return pim[1:-1,1:-1,:]
-    # return img
+    img=msiter(1000*mcont)
+    return img
 
 
 if __name__ == "__main__":
-    # lij=((0,1),(1,0),(0,-1),(-1,0),(1,1),(1,-1),(-1,-1),(-1,1))
+    lij=((0,1),(1,0),(0,-1),(-1,0),(1,1),(1,-1),(-1,-1),(-1,1))
 
     # with open('imgs/tri_part','rb') as f:
     #     im=np.load(f)
-    # # im=im[8:18,1:11]
-    # im=im[4:14,5:15]
+    # # im=im[4:14,5:15]
     # # iph=im.reshape((*im.shape,1))
     # iph=(im/np.sum(im)).reshape((*im.shape,1))
     # iph=np.sqrt(iph).reshape((*im.shape,1))
-    # # iph=np.log(iph).reshape((*im.shape,1))
 
     data_path = os.path.join(os.getcwd(), 'photos')
     im_flist = os.listdir(data_path)
     im_no = 3
     im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
     # im=im[110:150,140:190,:]
+    # im = im[180:280, 100:150, :]
+    # im= im[400:440, 610:650, :]
     im = im[40:60, 10:50, :]
-    # im=im[40:80,10:60,:]
     ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
     iph = im / ime
     # iph[iph == 0] = .0000001 / np.sum(ime)
@@ -176,8 +139,8 @@ if __name__ == "__main__":
 
     I, J, K = iph.shape
     l = np.arange(I * J).reshape(I, J)
-    ig = msimg(copy.deepcopy(iph), mcont=1)
-    # ig=msimg(copy.deepcopy(iph),rsig=.1,mcont=4)
+    # ig = msimg(iph, mcont=4)
+    ig=msimg(copy.deepcopy(iph),mcont=2)
     # ig=msimg(ig,rsig=.08)
 
     # blabels=np.zeros((I,J,6))
@@ -204,5 +167,6 @@ if __name__ == "__main__":
     plt.imshow(iph[:, :, 0])
     ax.set_title('iph')
     plt.colorbar(orientation='horizontal')
+
 
     plt.show()
