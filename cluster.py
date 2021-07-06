@@ -78,16 +78,6 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         with open('%s.npy' % fn, 'wb') as f:
             np.save(f, np.hstack((w_E,w_S,w_SE,w_NE)))
 
-            # gloc=np.argmin(di[1:-1,1:-1])
-            # gloc = (gloc // (J - 2) + 1, gloc % (J - 2) + 1)
-            # print('gloc %d %d'%(gloc[0],gloc[1]))
-            # floc=np.argmin(wt[:,gloc[0],gloc[1]])
-            # floc=(gloc[0]+lij[floc][0],gloc[1]+lij[floc][1])
-            # print('floc %d %d'%(floc[0],floc[1]))
-            # fi = np.zeros((I,J,K))
-            # fi[floc[0],floc[1],:] = 1
-            # fi[gloc[0],gloc[1],:] = -1
-            # img[gloc[0],gloc[1],:]=0
     else:
         fn = 'wt_rsig%f_%s' % (rsig, fn)
         a = rsig ** 2 / (K + 2)
@@ -153,7 +143,6 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
 
 
 if __name__ == "__main__":
-    # lij=((0,1),(1,0),(0,-1),(-1,0),(1,1),(1,-1),(-1,-1),(-1,1))
 
     # with open('imgs/tri_part','rb') as f:
     #     im=np.load(f)
@@ -173,7 +162,6 @@ if __name__ == "__main__":
     # im=im[40:80,10:60,:]
     ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
     iph = im / ime
-    # iph[iph == 0] = .0000001 / np.sum(ime)
     iph=np.sqrt(iph)
 
     I, J, K = iph.shape

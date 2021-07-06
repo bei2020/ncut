@@ -7,17 +7,13 @@ import copy
 from time import gmtime, strftime
 from settings import logger
 
-def SE_pe(gc,ps,Ip,w_W,w_N,w_NW,di,rsig):
+def SE_pe(gc,Ip,w_W,w_N,w_NW,di,rsig):
     """Return heat expanded patch.
     gc: ground center,heat source in a patch.
     ps: int,patch size=ps*ps, or array((i,j)),patch size=i*j
     """
     logger.debug('pe Ip%d %d'%Ip.shape)
-    if isinstance(ps,np.int64):
-        ps=(ps,ps)
-    elif not isinstance(ps,(np.ndarray,tuple)):
-        logger.debug('ps type %s'%type(ps))
-        print(ps)
+    ps=Ip.shape
     for i in range(1,ps[1]):
         Ip[0,i]+=w_W[0,i]*Ip[0,i-1]/di[0,i]
     for i in range(1,ps[0]):
@@ -56,39 +52,43 @@ def SE_ps(ground_center,Im,ps,pr,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J
     nsi=(I-c[0])//pr[0]
     nsj=(J-c[1])//pr[1]
     logger.info('pgc %d %d,nsi %d,nsj %d,asig %f'%(*ground_center,nsi,nsj,rsig))
-    for i in range(1,nsi):
-        for j in range(1,nsj):
+    for i in range(nsi):
+        for j in range(nsj):
             logger.debug('ploc %d %d'%(c[0],c[1]))
-            Im[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]]=SE_pe(c,ps,Im[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],w_W[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],w_N[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],w_NW[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],di[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],rsig)
+            #ps or I-c0
+            Im[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]]=SE_pe(c,Im[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],w_W[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],w_N[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],w_NW[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],di[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],rsig)
             c[1]+=pr[1]
         if c[1]<J-pr[1]:
             logger.debug('p margin loc %d %d'%(c[0],c[1]))
             psm=J-c[1]
-            Im[c[0]:c[0]+ps[0],c[1]:c[1]+psm]=SE_pe(c,(ps[0],psm),Im[c[0]:c[0]+ps[0],c[1]:c[1]+psm],w_W[c[0]:c[0]+ps[0],c[1]:c[1]+psm],w_N[c[0]:c[0]+ps[0],c[1]:c[1]+psm],w_NW[c[0]:c[0]+ps[0],c[1]:c[1]+psm],di[c[0]:c[0]+ps[0],c[1]:c[1]+psm],rsig)
+            #(ps[0],psm) or I-c0
+            Im[c[0]:c[0]+ps[0],c[1]:c[1]+psm]=SE_pe(c,Im[c[0]:c[0]+ps[0],c[1]:c[1]+psm],w_W[c[0]:c[0]+ps[0],c[1]:c[1]+psm],w_N[c[0]:c[0]+ps[0],c[1]:c[1]+psm],w_NW[c[0]:c[0]+ps[0],c[1]:c[1]+psm],di[c[0]:c[0]+ps[0],c[1]:c[1]+psm],rsig)
         c[0]+=pr[0]
         c[1]=ground_center[1]
-        ax = plt.subplot(111)
-        plt.imshow(Im)
-        ax.set_title('Iop')
-        plt.colorbar(orientation='horizontal')
-        plt.show()
+        # ax = plt.subplot(111)
+        # plt.imshow(Im)
+        # ax.set_title('Iop')
+        # plt.colorbar(orientation='horizontal')
+        # plt.show()
     if c[0]<I-pr[0]:
         logger.debug('p margin loc %d %d'%(c[0],c[1]))
         psm=I-c[0]
         # prm=psm//2
         # nsj=(J-c[1])//prm
-        for j in range(1,nsj):
-            Im[c[0]:c[0]+psm,c[1]:c[1]+ps[1]]=SE_pe(c,(psm,ps[1]),Im[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],w_W[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],w_N[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],w_NW[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],di[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],rsig)
+        for j in range(nsj):
+            #(psm,ps[1])
+            Im[c[0]:c[0]+psm,c[1]:c[1]+ps[1]]=SE_pe(c,Im[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],w_W[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],w_N[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],w_NW[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],di[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],rsig)
             c[1]+=pr[1]
         if c[1]<J-pr[1]:
             logger.debug('p margin loc %d %d'%(c[0],c[1]))
             psmj=J-c[1]
-            Im[c[0]:c[0]+psm,c[1]:c[1]+psmj]=SE_pe(c,(psm,psmj),Im[c[0]:c[0]+psm,c[1]:c[1]+psmj],w_W[c[0]:c[0]+psm,c[1]:c[1]+psmj],w_N[c[0]:c[0]+psm,c[1]:c[1]+psmj],w_NW[c[0]:c[0]+psm,c[1]:c[1]+psmj],di[c[0]:c[0]+psm,c[1]:c[1]+psmj],rsig)
-        # ax = plt.subplot(111)
-        # plt.imshow(Im)
-        # ax.set_title('Iopm')
-        # plt.colorbar(orientation='horizontal')
-        # plt.show()
+            #(psm,psmj)
+            Im[c[0]:c[0]+psm,c[1]:c[1]+psmj]=SE_pe(c,Im[c[0]:c[0]+psm,c[1]:c[1]+psmj],w_W[c[0]:c[0]+psm,c[1]:c[1]+psmj],w_N[c[0]:c[0]+psm,c[1]:c[1]+psmj],w_NW[c[0]:c[0]+psm,c[1]:c[1]+psmj],di[c[0]:c[0]+psm,c[1]:c[1]+psmj],rsig)
+        ax = plt.subplot(111)
+        plt.imshow(Im)
+        ax.set_title('Iopm')
+        plt.colorbar(orientation='horizontal')
+        plt.show()
     return Im
 
 def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
@@ -197,8 +197,24 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         # g f heat expand
         Io=SE_ps(gloc,Io,ps,pr,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,asig,I,J)
         Io=SE_ps(floc,Io,ps,pr,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,asig,I,J)
-        #normalize
-        Io=Io-np.mean(Io)
+        # NW=SE(counterclock 180 img)
+        gloc=(I-gloc[0]-1,J-gloc[1]-1)
+        floc=(I-floc[0]-1,J-floc[1]-1)
+        Io=np.rot90(Io,2)
+        rw_E=np.rot90(w_W ,2)
+        rw_S=np.rot90(w_N ,2)
+        rw_SE=np.rot90(w_NW,2)
+        rw_NE=np.rot90(w_SW,2)
+        rw_W=np.rot90(w_E ,2)
+        rw_N=np.rot90(w_S ,2)
+        rw_NW=np.rot90(w_SE,2)
+        rw_SW=np.rot90(w_NE ,2)
+        di=np.rot90(di ,2)
+        Io=SE_ps(gloc,Io,ps,pr,rw_E,rw_S,rw_SE,rw_NE,rw_W,rw_N,rw_NW,rw_SW,di,asig,I,J)
+        Io=SE_ps(floc,Io,ps,pr,rw_E,rw_S,rw_SE,rw_NE,rw_W,rw_N,rw_NW,rw_SW,di,asig,I,J)
+        Io=np.rot90(Io,2)
+        # normalize
+        # Io=Io-np.mean(Io)
 
         Io = np.tanh(Io/asig)
         ax = plt.subplot(111)
@@ -222,18 +238,17 @@ if __name__ == "__main__":
     # # im=im[5:,5:15]
     # # iph=im.reshape((*im.shape,1))
     # iph=(im/np.sum(im)).reshape((*im.shape,1))
+    # iph=np.sqrt(iph)
 
     data_path = os.path.join(os.getcwd(), 'photos')
     im_flist = os.listdir(data_path)
-    im_no = 2
+    im_no = 3
     im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
     im = im[40:60, 10:50, :]
-    # im = Image.open(os.path.join(data_path, im_flist[im_no]))
-    # im = im.resize((np.array(im.size) / 10).astype(int))
-    # im = np.asarray(im)
-    # im = im[10:22, 10:50,:]
+    # im=im[110:150,140:190,:]
     ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
     iph = im / ime
+    iph=np.sqrt(iph)
 
     # I, J, K = iph.shape
     # l = np.arange(I * J).reshape(I, J)
