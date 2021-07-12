@@ -5,23 +5,16 @@ from settings import logger, ZEROTH
 
 nV=2 # value levels
 
-def highest_power2(n):
-    """Return largest power of 2 lower than n"""
-    for i in range(n,1,-1):
-        if (i&(i-1))==0:
-            return i
-
 def wt_LS(V):
     """Return weight."""
     inte=1/(nV-1)
     wc=[i*inte for  i in range(nV)]
     addr=np.argmin(V)
-    hp = highest_power2(addr)
-    pw = np.log2(hp).astype('int')
-    depth = pw + 1 if addr > hp else pw
-    wtv=[addr%nV**j//nV**(j-1) for j in range(depth,0,-1)]
-    # wt=[wc[i] for i in wtv]
-    return [wc[i] for i in wtv]
+    v=[]
+    for i in range(4):
+        v.append(addr%nV)
+        addr=addr//nV
+    return [wc[v[3-i]] for i in range(4)]
 
 def value_wt(v,img,V):
     """Return Value of weight.
