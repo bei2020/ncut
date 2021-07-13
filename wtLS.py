@@ -1,26 +1,35 @@
 """learn coefficients of SG least square convolution."""
 import numpy as np
 from matplotlib import pyplot as plt
-from settings import logger, ZEROTH
+from settings import logger,INIT_V,SAVE_WT
 
-nV=2 # value levels
+
+def v2wt(v):
+    w=[wc[i] for i in v]
+    if np.sum(w)==0:
+        return np.zeros(5)
+    else:
+        return w/(2*np.sum(w))
 
 def wt_LS(V):
     """Return weight."""
-    inte=1/(nV-1)
-    wc=[i*inte for  i in range(nV)]
     addr=np.argmin(V)
     v=[]
-    for i in range(4):
+    for i in range(5):
         v.append(addr%nV)
         addr=addr//nV
-    return [wc[v[3-i]] for i in range(4)]
+    v=[v[4-i] for i in range(5)]#reverse
+    return v2wt(v)
 
-def value_wt(v,img,V):
-    """Return Value of weight.
+def value_update_ch1(v,img,V):
+    """Return updated Value of weight.
     v:w_E w_S w_SE w_NE 4 elements wt level index vector,total c levels
     V: Value function,LUT(address(v))"""
+    I,J=img.shape
+    alpha=.01
     addr=address(v)
+    wt=v2wt(v)
+    V[addr]=V[addr]+alpha*(np.sum(conv2d_ch1(img,*wt[:-1],*wt)-img)**2/(I*J)-V[addr])
     return V
 
 def address(v):
@@ -31,15 +40,24 @@ def address(v):
         addr += ve
     return addr
 
-def conv2d(img,wt):
+def conv2d_ch1(img,w_E, w_S, w_SE, w_NE, w_W, w_N, w_NW, w_SW,w_i):
     """Return 2d spatial convolved img."""
-    I, J, K = img.shape
-    pim = np.concatenate((np.zeros((1, J, K)), img, np.zeros((1, J, K))), axis=0)  # padding
-    pim = np.concatenate((np.zeros((I + 2, 1, K)), pim, np.zeros((I + 2, 1, K))), axis=1)
-    return img
+    I,J=img.shape
+    pim=np.zeros((I+2,J+2))
+    pim[1:-1,1:-1]=img
+    pim[0,1:-1]=im[0,:]
+    pim[-1,1:-1]=im[-1,:]
+    pim[:,0]=pim[1,1]
+    pim[:,-1]=pim[:,-2]
+    return w_E*pim[1:-1,2:]+w_S*pim[2:,1:-1]+w_W*pim[1:-1,:J]+w_N*pim[:I,1:-1]+w_SE*pim[2:,2:]+w_NE*pim[:I,2:] \
+           + w_NW*pim[:I,:J]+w_SW*pim[2:,:J]+w_i*img
 
 
 if __name__ == "__main__":
+    nV=3 # value levels=c
+    # wc: [-1,1]
+    inte=2/(nV-1)
+    wc=[i*inte-1 for  i in range(nV)]
 
     with open('imgs/tri_part', 'rb') as f:
         im = np.load(f)
@@ -58,32 +76,45 @@ if __name__ == "__main__":
     # iph[iph == 0] = .0000001 / np.sum(ime)
     # iph=np.sqrt(iph)
 
-    v=[1,0,1,0]
-    V=[0.0]*nV**4
-    V=value_wt(v,iph,V)
+
+    fn = 'Vwt_SGLS.npy'
+    if INIT_V==1:
+        V=[1]*nV**5
+        for i in range(nV):
+            for j in range(nV):
+                for k in range(nV):
+                    for l in range(nV):
+                        for m in range(nV):
+                            v=[i,j,k,l,m]
+                            wt=v2wt(v)
+                            I,J=iph.shape
+                            V[address(v)]=np.sum(conv2d_ch1(iph,*wt[:-1],*wt)-iph)**2/(I*J)
+    else:
+        with open( fn, 'rb') as f:
+            V = np.load(f)
+        logger.info('--- loaded weights value')
+
+    v=[0,0,1,0,1]
+    V=value_update_ch1(v,np.rot90(iph),V)
+    if SAVE_WT:
+        with open( fn, 'wb') as f:
+            np.save(f, V)
     wt=wt_LS(V)
 
-    imc = conv2d(iph,wt)
+    imc = conv2d_ch1(iph,*wt[:-1],*wt)
 
-    ax = plt.subplot(231)
-    # plt.imshow(im[:,:,0])
+    ax = plt.subplot(131)
     plt.imshow(im)
     ax.set_title('sample')
     plt.colorbar(orientation='horizontal')
-    ax = plt.subplot(232)
-    # plt.imshow(np.square(ig[:,:,0])*np.sum(im))
-    plt.imshow(ig[:, :, 0])
-    ax.set_title('ig')
+    ax = plt.subplot(132)
+    plt.imshow(imc)
+    ax.set_title('imc')
     plt.colorbar(orientation='horizontal')
-    # ax=plt.subplot(233)
-    # plt.imshow(blabels[:,:,0])
-    # ax.set_title('seg1 4000')
-    # plt.colorbar(orientation='horizontal')
 
-    ax = plt.subplot(233)
-    plt.imshow(iph[:, :, 0])
+    ax = plt.subplot(133)
+    plt.imshow(iph)
     ax.set_title('iph')
     plt.colorbar(orientation='horizontal')
-
 
     plt.show()
