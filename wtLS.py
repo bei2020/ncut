@@ -106,6 +106,7 @@ if __name__ == "__main__":
         ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, 3)
         iph = im / ime
         for k in range(3):
+            # V=Vupdate(iph[:,:,k],V)
             V=Vupdate(iph[:20,:30,:][:,:,k],V)
 
     if SAVE_WT:
