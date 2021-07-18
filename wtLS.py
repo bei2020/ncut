@@ -75,10 +75,10 @@ def Vupdate(img,V,niter=1000):
                         v=[i,j,k,l,m]
                         wt=v2wt(v)
                         if np.sum(wt)==0:
-                            logger.debug('wt0 %s'%v)
+                            # logger.debug('wt0 %s'%v)
                             continue
                         elif np.sum(wt[:-1])==0:
-                            logger.debug('wtIdentity %s'%v)
+                            # logger.debug('wtIdentity %s'%v)
                             continue
                         im=copy.deepcopy(img)
                         for n in range(niter):
@@ -127,20 +127,20 @@ if __name__ == "__main__":
             V = np.load(f)
         logger.info('--- loaded weights value')
 
-    with open('imgs/tri_part', 'rb') as f:
-        im = np.load(f)
-    iph = (im / np.sum(im))
-    V=Vupdate(iph/1,V,10)
+    # with open('imgs/tri_part', 'rb') as f:
+    #     im = np.load(f)
+    # iph = (im / np.sum(im))
+    # V=Vupdate(iph/1,V,10)
 
-    # data_path = os.path.join(os.getcwd(), 'photos')
-    # im_flist = os.listdir(data_path)
-    # for imn in im_flist[3:-1]:
-    #     im = mpimg.imread(os.path.join(data_path, imn))
-    #     ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, 3)
-    #     iph = im / ime
-    #     for k in range(3):
-    #         # V=Vupdate(iph[:,:,k],V)
-    #         V=Vupdate(iph[:20,:30,:][:,:,k],V)
+    data_path = os.path.join(os.getcwd(), 'photos')
+    im_flist = os.listdir(data_path)
+    for imn in im_flist[3:-1]:
+        im = mpimg.imread(os.path.join(data_path, imn))
+        ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, 3)
+        iph = im / ime
+        for k in range(3):
+            # V=Vupdate(iph[:,:,k],V)
+            V=Vupdate(iph[:20,:30,:][:,:,k],V,10)
 
     if SAVE_WT:
         with open( fn, 'wb') as f:
@@ -148,28 +148,27 @@ if __name__ == "__main__":
     wt=wt_LS(V)
     logger.info('bestwt %s'%str(wt))
 
-    imc = conv2d_ch1(iph/1,*wt[:-1],*wt)
+    # imc = conv2d_ch1(iph/1,*wt[:-1],*wt)
 
-    # imc=np.transpose(np.array(imc),(1,2,0))
-    # im = mpimg.imread(os.path.join(data_path, im_flist[3]))
-    # ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, 3)
-    # iph = im / ime
-    # imc = [conv2d_ch1(iph[:,:,k],*wt[:-1],*wt) for k in range(3)]
-    # imc=np.transpose(np.array(imc),(1,2,0))
+    im = mpimg.imread(os.path.join(data_path, im_flist[3]))
+    ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, 3)
+    iph = im / ime
+    imc = [conv2d_ch1(iph[:,:,k],*wt[:-1],*wt) for k in range(3)]
+    imc=np.transpose(np.array(imc),(1,2,0))
 
     ax = plt.subplot(131)
     plt.imshow(im)
     ax.set_title('sample')
     plt.colorbar(orientation='horizontal')
     ax = plt.subplot(132)
-    plt.imshow(imc)
-    # plt.imshow((imc*ime).astype('int'))
+    # plt.imshow(imc)
+    plt.imshow((imc*ime).astype('int'))
     ax.set_title('imc')
     plt.colorbar(orientation='horizontal')
 
     ax = plt.subplot(133)
-    plt.imshow(iph)
-    # plt.imshow((iph*ime).astype('int'))
+    # plt.imshow(iph)
+    plt.imshow((iph*ime).astype('int'))
     ax.set_title('iph')
     plt.colorbar(orientation='horizontal')
 
