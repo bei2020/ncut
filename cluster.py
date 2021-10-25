@@ -32,11 +32,17 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         a = rsig ** 2 / (K + 2)
         r=rsig* 2 ** (1 / nint)
         w_E = edge_weight(grad_E, r)#[I,J]
+        w_E[:,-1]=0
         w_S = edge_weight(grad_S, r)
+        w_S[-1,:]=0
         w_SE = edge_weight(grad_SE, r)
+        w_SE[:,-1]=0
+        w_SE[-1,:]=0
         w_NE = edge_weight(grad_NE, r)
+        w_NE[:,-1]=0
+        w_NE[0,:]=0
         w_W = np.hstack((np.zeros((I, 1)), w_E[:, :-1]))
-        w_N = np.vstack((np.zeros((1, J)), w_S[:-1, :,]))
+        w_N = np.vstack((np.zeros((1, J)), w_S[:-1, :]))
         w_NW = np.hstack((np.zeros((I, 1)),np.vstack((np.zeros((1, J - 1)), w_SE[:-1,:-1]))))
         w_SW = np.hstack((np.zeros((I, 1)), np.vstack((w_NE[1:,:-1], np.zeros((1, J - 1))))))
         wn=np.sum([w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW])
@@ -53,11 +59,17 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
              + np.multiply( w_N.reshape(I,J,1), pim[:I, 1:-1, :]) + np.multiply(w_SE.reshape(I,J,1), pim[2:, 2:, :]) + np.multiply(w_NE.reshape(I,J,1), pim[:I, 2:, :]) \
              + np.multiply( w_NW.reshape(I,J,1), pim[:I, :J, :]) + np.multiply(w_SW.reshape(I,J,1), pim[2:, :J, :]))/di.reshape((I, J, 1))
         w_E = edge_weight(grad_E,rsig)
-        w_S = edge_weight(grad_S,rsig)
-        w_SE = edge_weight(grad_SE,rsig)
-        w_NE = edge_weight(grad_NE,rsig)
+        w_E[:,-1]=0
+        w_S = edge_weight(grad_S, rsig)
+        w_S[-1,:]=0
+        w_SE = edge_weight(grad_SE, rsig)
+        w_SE[:,-1]=0
+        w_SE[-1,:]=0
+        w_NE = edge_weight(grad_NE, rsig)
+        w_NE[:,-1]=0
+        w_NE[0,:]=0
         w_W = np.hstack((np.zeros((I, 1)), w_E[:, :-1]))
-        w_N = np.vstack((np.zeros((1, J)), w_S[:-1, :,]))
+        w_N = np.vstack((np.zeros((1, J)), w_S[:-1, :]))
         w_NW = np.hstack((np.zeros((I, 1)),np.vstack((np.zeros((1, J - 1)), w_SE[:-1,:-1]))))
         w_SW = np.hstack((np.zeros((I, 1)), np.vstack((w_NE[1:,:-1], np.zeros((1, J - 1))))))
         wn=np.sum([w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW])
@@ -94,6 +106,11 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         # wt[:,gloc[0],gloc[1]]=0
         # wt[:,floc[0],floc[1]]=0
         for i in range(niter):
+            # normalize
+            c=np.sum(np.multiply(pim[1:-1, 1:-1, :],di.reshape((I,J,1))),axis=(0,1))
+            pim[1:-1, 1:-1, :]-=c.reshape((1,1,K))
+            c=np.sum(np.multiply(pim[1:-1, 1:-1, :]**2,di.reshape((I,J,1))),axis=(0,1))
+            pim[1:-1, 1:-1, :]/=(c**(1/2)).reshape((1,1,K))
             Io = (np.multiply(w_E.reshape(I,J,1), pim[1:-1, 2:, :]+ gamma * v[1:-1, 2:, :]) + np.multiply(w_S.reshape(I,J,1), pim[2:, 1:-1, :]+ gamma * v[2:, 1:-1, :]) + np.multiply(w_W.reshape(I,J,1), pim[1:-1, :J, :]+ gamma * v[1:-1, :J, :]) \
                   + np.multiply( w_N.reshape(I,J,1), pim[:I, 1:-1, :]+ gamma * v[:I, 1:-1, :]) + np.multiply(w_SE.reshape(I,J,1), pim[2:, 2:, :]+ gamma * v[2:, 2:, :]) + np.multiply(w_NE.reshape(I,J,1), pim[:I, 2:, :]+ gamma * v[:I, 2:, :]) \
                   + np.multiply( w_NW.reshape(I,J,1), pim[:I, :J, :]+ gamma * v[:I, :J, :]) + np.multiply(w_SW.reshape(I,J,1), pim[2:, :J, :]+ gamma * v[2:, :J, :]))/di.reshape((I, J, 1))
@@ -143,16 +160,6 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
 
 
 if __name__ == "__main__":
-
-    # with open('imgs/tri_part','rb') as f:
-    #     im=np.load(f)
-    # # im=im[8:18,1:11]
-    # im=im[4:14,5:15]
-    # # iph=im.reshape((*im.shape,1))
-    # iph=(im/np.sum(im)).reshape((*im.shape,1))
-    # iph=np.sqrt(iph).reshape((*im.shape,1))
-    # # iph=np.log(iph).reshape((*im.shape,1))
-
     data_path = os.path.join(os.getcwd(), 'photos')
     im_flist = os.listdir(data_path)
     im_no = 3
@@ -160,39 +167,36 @@ if __name__ == "__main__":
     # im=im[110:150,140:190,:]
     im = im[40:60, 10:50, :]
     # im=im[40:80,10:60,:]
-    ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
-    iph = im / ime
-    iph=np.sqrt(iph)
+    iph = -np.log(im / 255)
 
     I, J, K = iph.shape
-    l = np.arange(I * J).reshape(I, J)
-    ig = msimg(copy.deepcopy(iph), mcont=1)
+    ig = msimg(copy.deepcopy(iph), mcont=0)
     # ig=msimg(copy.deepcopy(iph),rsig=.1,mcont=4)
     # ig=msimg(ig,rsig=.08)
 
-    # blabels=np.zeros((I,J,6))
-    # prob = 1 / (1 + np.exp(-np.sum(np.multiply(ig,iph),axis=2)))
-    # prob = 1 / (1 + np.exp(-ig[:,:,ch]))
-    # blabels[:,:,0] = (prob > np.random.rand(*prob.shape)).astype('int')
-
-    ax = plt.subplot(131)
+    ax = plt.subplot(141)
     # plt.imshow(im[:,:,0])
     plt.imshow(im)
     ax.set_title('sample')
     plt.colorbar(orientation='horizontal')
-    ax = plt.subplot(132)
+    ax = plt.subplot(142)
+    plt.imshow(iph[:, :, 0])
+    ax.set_title('iph')
     # plt.imshow(np.square(ig[:,:,0])*np.sum(im))
-    plt.imshow(ig[:, :, 0])
-    ax.set_title('ig')
     plt.colorbar(orientation='horizontal')
     # ax=plt.subplot(133)
     # plt.imshow(blabels[:,:,0])
     # ax.set_title('seg1 4000')
     # plt.colorbar(orientation='horizontal')
 
-    ax = plt.subplot(133)
-    plt.imshow(iph[:, :, 0])
-    ax.set_title('iph')
+    ax = plt.subplot(143)
+    plt.imshow(ig[:, :, 0])
+    ax.set_title('cluster')
+    plt.colorbar(orientation='horizontal')
+
+    ax = plt.subplot(144)
+    plt.imshow((ig[:,:,0]<0).astype('int'))
+    ax.set_title('seg0')
     plt.colorbar(orientation='horizontal')
 
     plt.show()

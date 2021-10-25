@@ -242,29 +242,16 @@ if __name__=="__main__":
     # # 3 partition image
     # sample3part_seg()
 
-    with open('imgs/tri_part','rb') as f:
-        im=np.load(f)
-    im=im[4:12,5:10]
-    im=im/np.sum(im)
-    # ax=plt.subplot(2,2,1)
-    # plt.imshow(im,cmap='gray')
-    # ax.set_title('centered image')
-    # plt.colorbar(orientation='horizontal')
-    # plt.show()
-
-    # data_path = os.path.join(os.getcwd(), 'photos')
-    # im_flist = os.listdir(data_path)
-    # im_no = 2
-    # # img = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
-    # im = Image.open(os.path.join(data_path, im_flist[im_no]))
-    # im = im.resize((np.array(im.size) / 10).astype(int))
-    # im = np.asarray(im)
+    data_path = os.path.join(os.getcwd(), 'photos')
+    im_flist = os.listdir(data_path)
+    im_no = 3
+    img = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
+    img = img[40:60, 10:50, :]
     # im = im[10:22, 10:50,:]
-    # # # im=im[110:150,140:190,:]
-    # # im = img[40:60, 10:50, :]
-    # # # im = im[40:50, 10:20, :]
-    # ime = np.einsum('ijk->k', im.astype('uint32')).reshape(1, 1, im.shape[2])
-    # im = im / ime
+    # # im=im[110:150,140:190,:]
+    # # im = im[40:50, 10:20, :]
+    ime = np.einsum('ijk->k', img.astype('uint32')).reshape(1, 1, img.shape[2])
+    im = img / ime
 
     if len(im.shape)==2:
         I,J=im.shape
@@ -293,7 +280,7 @@ if __name__=="__main__":
     # plot_eigs(w[:7],v[:,:7],shape=(I,J),row=row)
     ax=plt.subplot(row,4,row*4)
     # plt.imshow(img[10:22, 10:50,:])
-    plt.imshow(im)
-    ax.set_title('centered image')
+    plt.imshow(img)
+    ax.set_title('image')
     plt.colorbar(orientation='horizontal')
     plt.show()

@@ -1,9 +1,6 @@
 # ncut instance segmentation
 
 ## ncut
-3 partitions `segment.py`
-![sample3p](imgs/sample3parts.png)
- 
 ncut with eigensolver Lanczos `segment.py`
 ![lanc](imgs/butt_lanc_pair_iter2000_w30.png)
 ![lanc](imgs/rece_lanc_pair_iter2000_w50.png)
@@ -13,7 +10,7 @@ ncut with eigensolver Lanczos `segment.py`
 
 ## pixel label
 `cluster.py`
-![denoise](imgs/butt_denoise.png)
+![denoise](imgs/butt_ms.png)
 ### binary label
 `ms_bina.py`
 ![bina](imgs/butt_edge_bina.png)
