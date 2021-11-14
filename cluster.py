@@ -25,7 +25,7 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         grad_E = -pim[1:1 + I, 1:-1, :] + pim[1:1 + I, 2:, :]
         grad_S = -pim[1:-1, 1:1 + J, :] + pim[2:, 1:1 + J, :]
         grad_SE = pim[2:, 2:, :] - pim[1:-1, 1:-1, :]
-        grad_NE = pim[:I, 2:, :] - pim[1:1 + I, 1:-1]
+        grad_NE = pim[:I, 2:, :] - pim[1:-1, 1:-1,:]
         if not rsig:
             rsig = grad_m(np.hstack((grad_E,grad_S,grad_SE,grad_NE)))
         print('rsig %f' % rsig)
@@ -86,9 +86,9 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
               + np.multiply( w_N.reshape(I,J,1), pim[:I, 1:-1, :]) + np.multiply(w_SE.reshape(I,J,1), pim[2:, 2:, :]) + np.multiply(w_NE.reshape(I,J,1), pim[:I, 2:, :]) \
               + np.multiply( w_NW.reshape(I,J,1), pim[:I, :J, :]) + np.multiply(w_SW.reshape(I,J,1), pim[2:, :J, :]))/di.reshape((I, J, 1))
         cur = Iok - Io
-        fn = 'wt_rsig%f_%s' % (rsig, fn)
-        with open('%s.npy' % fn, 'wb') as f:
-            np.save(f, np.hstack((w_E,w_S,w_SE,w_NE)))
+        # fn = 'wt_rsig%f_%s' % (rsig, fn)
+        # with open('%s.npy' % fn, 'wb') as f:
+        #     np.save(f, np.hstack((w_E,w_S,w_SE,w_NE)))
 
     else:
         fn = 'wt_rsig%f_%s' % (rsig, fn)
@@ -162,11 +162,19 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
 if __name__ == "__main__":
     data_path = os.path.join(os.getcwd(), 'photos')
     im_flist = os.listdir(data_path)
+    # im_no = 5
     im_no = 3
     im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
     # im=im[110:150,140:190,:]
-    im = im[40:60, 10:50, :]
+    # im= im[400:410, 610:625, :]
+    # im= im[400:440, 610:650, :]
+    # im = im[40:60, 10:50, :]
     # im=im[40:80,10:60,:]
+    # im=im[45:55,50:60,:]
+    im = im[40:60, 10:50, :]
+    # im= im[360:400, 450:650, :]
+    # iph=im/1
+    # iph[iph == 0] = .0000001 / np.sum(iph)
     iph = -np.log(im / 255)
 
     I, J, K = iph.shape
