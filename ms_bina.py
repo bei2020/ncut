@@ -122,7 +122,6 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
 
     else:
         fn = 'wt_rsig%f_%s' % (rsig, fn)
-        a = rsig ** 2 / (K + 2)
         with open('%s.npy' % fn, 'rb') as f:
             wt = np.load(f)
         w_E,w_S,w_SE,w_NE=wt
@@ -131,9 +130,35 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         w_NW = np.hstack((np.zeros((I, 1)),np.vstack((np.zeros((1, J - 1)), w_SE[:-1,:-1]))))
         w_SW = np.hstack((np.zeros((I, 1)), np.vstack((w_NE[1:,:-1], np.zeros((1, J - 1))))))
 
-    return cur
-    # return img
+    a = rsig ** 2 / (K + 2)
+    def msiter(niter=1000):
+        nonlocal pim, v, Vp, w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW, cur
+        # wt[:,gloc[0],gloc[1]]=0
+        # wt[:,floc[0],floc[1]]=0
+        for i in range(niter):
+            # normalize
+            c=np.sum(np.multiply(pim[1:-1, 1:-1, :],di.reshape((I,J,1))),axis=(0,1))
+            pim[1:-1, 1:-1, :]-=c.reshape((1,1,K))
+            c=np.sum(np.multiply(pim[1:-1, 1:-1, :]**2,di.reshape((I,J,1))),axis=(0,1))
+            pim[1:-1, 1:-1, :]/=(c**(1/2)).reshape((1,1,K))
+            Io = (np.multiply(w_E.reshape(I,J,1), pim[1:-1, 2:, :]+ gamma * v[1:-1, 2:, :]) + np.multiply(w_S.reshape(I,J,1), pim[2:, 1:-1, :]+ gamma * v[2:, 1:-1, :]) + np.multiply(w_W.reshape(I,J,1), pim[1:-1, :J, :]+ gamma * v[1:-1, :J, :]) \
+                  + np.multiply( w_N.reshape(I,J,1), pim[:I, 1:-1, :]+ gamma * v[:I, 1:-1, :]) + np.multiply(w_SE.reshape(I,J,1), pim[2:, 2:, :]+ gamma * v[2:, 2:, :]) + np.multiply(w_NE.reshape(I,J,1), pim[:I, 2:, :]+ gamma * v[:I, 2:, :]) \
+                  + np.multiply( w_NW.reshape(I,J,1), pim[:I, :J, :]+ gamma * v[:I, :J, :]) + np.multiply(w_SW.reshape(I,J,1), pim[2:, :J, :]+ gamma * v[2:, :J, :]))/di.reshape((I, J, 1))
+            # gp = Io - (img + gamma * v[1:-1,1:-1,:])
+            gp = Io - (pim + gamma * v)[1:-1,1:-1,:]
+            Vp = alpha * Vp + (1 - alpha) * gp ** 2
+            Gp = 1 / (lamb + np.sqrt(Vp))
+            v[1:-1,1:-1,:] = gamma * v[1:-1,1:-1,:] + a * (np.multiply(Gp, gp) + cur)
+            pim += v
+            # ax = plt.subplot(111)
+            # plt.imshow(pim[1:-1,1:-1,0])
+            # ax.set_title('pim')
+            # plt.colorbar(orientation='horizontal')
+            # plt.show()
+        return
 
+    msiter()
+    return pim[1:-1,1:-1,:]
 
 if __name__ == "__main__":
     # E,S,W,N,SE,SW,NW,NE
@@ -141,12 +166,12 @@ if __name__ == "__main__":
 
     data_path = os.path.join(os.getcwd(), 'photos')
     im_flist = os.listdir(data_path)
-    # im_no = 5
-    im_no = 1
-    # im_no = 3
+    #im_no = 5
+    # im_no = 1
+    im_no = 3
     im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
     # im=im[110:150,140:190,:]
-    im=im[100:300,:300,:]
+    # im=im[100:300,:300,:]
     # im= im[400:410, 610:625, :]
     # im= im[400:440, 610:650, :]
     # im = im[40:60, 10:50, :]
