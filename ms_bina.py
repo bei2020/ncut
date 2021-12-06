@@ -119,6 +119,9 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
              + np.multiply( w_N.reshape(I,J,1), pim[:I, 1:-1, :]) + np.multiply(w_SE.reshape(I,J,1), pim[2:, 2:, :]) + np.multiply(w_NE.reshape(I,J,1), pim[:I, 2:, :]) \
              + np.multiply( w_NW.reshape(I,J,1), pim[:I, :J, :]) + np.multiply(w_SW.reshape(I,J,1), pim[2:, :J, :]))/di.reshape((I, J, 1))
         cur = Iok - Io
+        fn = 'wt_rsig%f_%s' % (rsig, fn)
+        with open('%s.npy' % fn, 'wb') as f:
+            np.save(f, np.stack((w_E,w_S,w_SE,w_NE)))
 
     else:
         fn = 'wt_rsig%f_%s' % (rsig, fn)
@@ -129,6 +132,7 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         w_N = np.vstack((np.zeros((1, J)), w_S[:-1, :,]))
         w_NW = np.hstack((np.zeros((I, 1)),np.vstack((np.zeros((1, J - 1)), w_SE[:-1,:-1]))))
         w_SW = np.hstack((np.zeros((I, 1)), np.vstack((w_NE[1:,:-1], np.zeros((1, J - 1))))))
+        di=np.sum(np.stack((w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW),0),0)
 
     a = rsig ** 2 / (K + 2)
     def msiter(niter=1000):
@@ -150,14 +154,9 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
             Gp = 1 / (lamb + np.sqrt(Vp))
             v[1:-1,1:-1,:] = gamma * v[1:-1,1:-1,:] + a * (np.multiply(Gp, gp) + cur)
             pim += v
-            # ax = plt.subplot(111)
-            # plt.imshow(pim[1:-1,1:-1,0])
-            # ax.set_title('pim')
-            # plt.colorbar(orientation='horizontal')
-            # plt.show()
         return
 
-    msiter()
+    msiter(100)
     return pim[1:-1,1:-1,:]
 
 if __name__ == "__main__":
@@ -174,42 +173,41 @@ if __name__ == "__main__":
     # im=im[100:300,:300,:]
     # im= im[400:410, 610:625, :]
     # im= im[400:440, 610:650, :]
-    # im = im[40:60, 10:50, :]
+    # im = im[:50, :60, :]
     # im=im[40:80,10:60,:]
     # im=im[45:55,50:60,:]
-    # im = im[40:60, 10:50, :]
+    im = im[40:60, 10:50, :]
     # im= im[360:400, 450:650, :]
-    iph=im/1
+    ig=im/1
 
-    I, J, K = iph.shape
-    ig = msimg(copy.deepcopy(iph), mcont=0)
+    ig = msimg(ig, mcont=0)
 
     h, b = np.histogram(abs(ig).flatten(), bins=20)
     th=np.dot(h, b[1:]) / np.sum(h)
+    # p1=1/(1+np.exp(-ig))
+    # blab=(p1>np.random.rand(*p1.shape)).astype('int')
 
     ax = plt.subplot(141)
-    # plt.imshow(im[:,:,0])
     plt.imshow(im)
     ax.set_title('sample')
     plt.colorbar(orientation='horizontal')
     ax = plt.subplot(142)
     plt.imshow(ig[:, :, 0])
     ax.set_title('cur')
-    # plt.imshow(np.square(ig[:,:,0])*np.sum(im))
     plt.colorbar(orientation='horizontal')
-    # ax=plt.subplot(133)
-    # plt.imshow(blabels[:,:,0])
-    # ax.set_title('seg1 4000')
-    # plt.colorbar(orientation='horizontal')
 
     ax = plt.subplot(143)
     plt.imshow((ig[:, :, 0]>th).astype('int'))
     ax.set_title('edge')
+    # plt.imshow(p1[:,:,0])
+    # ax.set_title('p1')
     plt.colorbar(orientation='horizontal')
 
     ax = plt.subplot(144)
     plt.imshow((ig[:,:,0]>0).astype('int'))
     ax.set_title('cur>0')
+    # plt.imshow(blab[:, :, 0])
+    # ax.set_title('on')
     plt.colorbar(orientation='horizontal')
 
     plt.show()
