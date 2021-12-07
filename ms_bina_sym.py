@@ -109,9 +109,7 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     pim = np.concatenate((np.zeros((1,J,K)), img, np.zeros((1,J,K))), axis=0) #padding
     pim = np.concatenate((np.zeros((I+2,1,K)), pim,np.zeros((I+2,1,K))), axis=1)
     if init_wt == 1:
-        nint = 2
         # 1234:ESWN, Io: DHWC, D=8 directions
-        # curvature
         grad_E = -pim[1:1 + I, 1:-1, :] + pim[1:1 + I, 2:, :]
         grad_S = -pim[1:-1, 1:1 + J, :] + pim[2:, 1:1 + J, :]
         grad_SE = pim[2:, 2:, :] - pim[1:-1, 1:-1, :]
@@ -214,14 +212,6 @@ if __name__ == "__main__":
     #E,S,W,N,SE,SW,NW,NE
     lij=((0,1),(1,0),(0,-1),(-1,0),(1,1),(1,-1),(-1,-1),(-1,1))
 
-    # with open('imgs/tri_part','rb') as f:
-    #     im=np.load(f)
-    # # im=im[4:14,5:15]
-    # # im=im[5:,5:15]
-    # # iph=im.reshape((*im.shape,1))
-    # iph=(im/np.sum(im)).reshape((*im.shape,1))
-    # iph=np.sqrt(iph)
-
     data_path = os.path.join(os.getcwd(), 'photos')
     im_flist = os.listdir(data_path)
     im_no = 1
@@ -239,9 +229,7 @@ if __name__ == "__main__":
     ax.set_title('sample')
     plt.colorbar(orientation='horizontal')
     ax = plt.subplot(122)
-    # plt.imshow(np.square(ig[:,:,0])*np.sum(im))
     plt.imshow(ig)
-    # plt.imshow(blabels,cmap='gray')
     ax.set_title('one part')
     plt.colorbar(orientation='horizontal')
 
