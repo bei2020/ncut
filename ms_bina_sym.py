@@ -117,51 +117,41 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     for w in (w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW):
         w[gloc[0],gloc[1]]=0
 
-    def ms_seq():
-        """Return binary img."""
-        nonlocal w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,gloc,floc,di,asig
-        Io= np.ones((I,J)).astype('int')
-        # Io[floc[0],floc[1]] = 1
-        Io[gloc[0],gloc[1]] = 0
-        # g heat expand
-        Io[gloc[0]:,gloc[1]:]=SE_pe(gloc,Io[gloc[0]:,gloc[1]:],w_W[gloc[0]:,gloc[1]:],w_N[gloc[0]:,gloc[1]:],w_NW[gloc[0]:,gloc[1]:],di[gloc[0]:,gloc[1]:],asig)
-        # NW=SE(counterclock 180 img)
-        rg=(I-gloc[0]-1,J-gloc[1]-1)
-        Io=np.rot90(Io,2)
-        rw_W=np.rot90(w_E ,2)
-        rw_N=np.rot90(w_S ,2)
-        rw_NW=np.rot90(w_SE,2)
-        rdi=np.rot90(di ,2)
-        Io[rg[0]:,rg[1]:]=SE_pe(rg,Io[rg[0]:,rg[1]:],rw_W[rg[0]:,rg[1]:],rw_N[rg[0]:,rg[1]:],rw_NW[rg[0]:,rg[1]:],rdi[rg[0]:,rg[1]:],asig)
-        Io=np.rot90(Io,2)
-        # NE
-        Io=np.rot90(Io,1)
-        rg=(J-gloc[1]-1,gloc[0])
-        rw_W=np.rot90(w_N ,1)
-        rw_N=np.rot90(w_E ,1)
-        rw_NW=np.rot90(w_NE,1)
-        rdi=np.rot90(di ,1)
-        Io[rg[0]:,rg[1]:]=SE_pe(rg,Io[rg[0]:,rg[1]:],rw_W[rg[0]:,rg[1]:],rw_N[rg[0]:,rg[1]:],rw_NW[rg[0]:,rg[1]:],rdi[rg[0]:,rg[1]:],asig)
-        Io=np.rot90(Io,-1)
-        # SW
-        Io=np.rot90(Io,-1)
-        rg=(gloc[1],I-1-gloc[0])
-        rw_W=np.rot90(w_S ,-1)
-        rw_N=np.rot90(w_W ,-1)
-        rw_NW=np.rot90(w_SW,-1)
-        rdi=np.rot90(di ,-1)
-        Io[rg[0]:,rg[1]:]=SE_pe(rg,Io[rg[0]:,rg[1]:],rw_W[rg[0]:,rg[1]:],rw_N[rg[0]:,rg[1]:],rw_NW[rg[0]:,rg[1]:],rdi[rg[0]:,rg[1]:],asig)
-        Io=np.rot90(Io,1)
+    # binary img
+    Io= np.ones((I,J)).astype('int')
+    # Io[floc[0],floc[1]] = 1
+    Io[gloc[0],gloc[1]] = 0
+    # g heat expand
+    Io[gloc[0]:,gloc[1]:]=SE_pe(gloc,Io[gloc[0]:,gloc[1]:],w_W[gloc[0]:,gloc[1]:],w_N[gloc[0]:,gloc[1]:],w_NW[gloc[0]:,gloc[1]:],di[gloc[0]:,gloc[1]:],asig)
+    # NW=SE(counterclock 180 img)
+    rg=(I-gloc[0]-1,J-gloc[1]-1)
+    Io=np.rot90(Io,2)
+    rw_W=np.rot90(w_E ,2)
+    rw_N=np.rot90(w_S ,2)
+    rw_NW=np.rot90(w_SE,2)
+    rdi=np.rot90(di ,2)
+    Io[rg[0]:,rg[1]:]=SE_pe(rg,Io[rg[0]:,rg[1]:],rw_W[rg[0]:,rg[1]:],rw_N[rg[0]:,rg[1]:],rw_NW[rg[0]:,rg[1]:],rdi[rg[0]:,rg[1]:],asig)
+    Io=np.rot90(Io,2)
+    # NE
+    Io=np.rot90(Io,1)
+    rg=(J-gloc[1]-1,gloc[0])
+    rw_W=np.rot90(w_N ,1)
+    rw_N=np.rot90(w_E ,1)
+    rw_NW=np.rot90(w_NE,1)
+    rdi=np.rot90(di ,1)
+    Io[rg[0]:,rg[1]:]=SE_pe(rg,Io[rg[0]:,rg[1]:],rw_W[rg[0]:,rg[1]:],rw_N[rg[0]:,rg[1]:],rw_NW[rg[0]:,rg[1]:],rdi[rg[0]:,rg[1]:],asig)
+    Io=np.rot90(Io,-1)
+    # SW
+    Io=np.rot90(Io,-1)
+    rg=(gloc[1],I-1-gloc[0])
+    rw_W=np.rot90(w_S ,-1)
+    rw_N=np.rot90(w_W ,-1)
+    rw_NW=np.rot90(w_SW,-1)
+    rdi=np.rot90(di ,-1)
+    Io[rg[0]:,rg[1]:]=SE_pe(rg,Io[rg[0]:,rg[1]:],rw_W[rg[0]:,rg[1]:],rw_N[rg[0]:,rg[1]:],rw_NW[rg[0]:,rg[1]:],rdi[rg[0]:,rg[1]:],asig)
+    Io=np.rot90(Io,1)
 
-        ax = plt.subplot(111)
-        plt.imshow(Io)
-        ax.set_title('Io')
-        plt.colorbar(orientation='horizontal')
-        plt.show()
-        return Io
-
-    img=ms_seq()
-    return img
+    return Io
 
 
 if __name__ == "__main__":
