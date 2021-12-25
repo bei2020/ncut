@@ -74,6 +74,7 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
 
     pim = np.ones((I+2,J+2)).astype('int')
     pim[gloc[0]+1,gloc[1]+1] = 0
+    pim[1:-1,1:-1][np.sum(abs(img-img[gloc]),-1)<np.sum(abs(img-img[floc]),-1)]=0 #gloc=0
     def msiter(niter=1000):
         nonlocal pim, w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW
         for i in range(niter):
@@ -81,9 +82,9 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
                  +w_SE*(pim[2:, 2:]^1)+ w_NE*(pim[:I, 2:]^1)+w_NW*(pim[:I, :J]^1) + w_SW*(pim[2:, :J]^1)/di
             e0 = w_E*(pim[1:-1, 2:]^0)+ w_S*(pim[2:, 1:-1]^0)+w_W*(pim[1:-1, :J]^0)+w_N*(pim[:I, 1:-1]^0) \
                  +w_SE*(pim[2:, 2:]^0)+ w_NE*(pim[:I, 2:]^0)+w_NW*(pim[:I, :J]^0) + w_SW*(pim[2:, :J]^0)/di
-            # hase=(e1+e0)!=0
-            # pim[1:-1,1:-1][hase]=(1/(1+np.exp((e1-e0)[hase]/(e1+e0)[hase]))>np.random.rand(I,J)[hase]).astype('int')
-            pim[1:-1,1:-1]=(1/(1+np.exp((e1-e0)))>np.random.rand(I,J)).astype('int')
+            hase=(e1+e0)!=0
+            pim[1:-1,1:-1][hase]=(1/(1+np.exp((e1-e0)[hase]/(e1+e0)[hase]))>np.random.rand(I,J)[hase]).astype('int')
+            # pim[1:-1,1:-1]=(1/(1+np.exp((e1-e0)))>np.random.rand(I,J)).astype('int')
             pim[gloc[0]+1,gloc[1]+1] = 0
             pim[floc[0]+1,floc[1]+1] = 1
             # print(e1[e1!=0])

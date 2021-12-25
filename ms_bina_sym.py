@@ -9,7 +9,7 @@ from settings import logger
 
 def SE_pe(gc,Ip,w_W,w_N,w_NW,di,rsig):
     """Return heat expanded patch.
-    gc: ground center,heat source in a patch.
+    gc: ground center,ul heat source in a patch Ip.
     ps: int,patch size=ps*ps, or array((i,j)),patch size=i*j
     """
     logger.debug('pe Ip%d %d'%Ip.shape)
@@ -51,56 +51,7 @@ def SE_pe(gc,Ip,w_W,w_N,w_NW,di,rsig):
 
     for i in range(ps[0]):
         Ip[i,:]=pa[i,i:i+ps[1]]
-    # Ip = np.tanh(Ip/rsig)
     return Ip
-
-def SE_ps(ground_center,Im,ps,pr,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,rsig,I,J):
-    """Return SE direction heat expanded image.
-    ps: array((i,j)), sequence length*2,patch size=i*j."""
-    c=[*ground_center]
-    nsi=(I-c[0])//pr[0]
-    nsj=(J-c[1])//pr[1]
-    # kr=1
-    # ps=pr+kr
-    logger.info('pgc %d %d,nsi %d,nsj %d,asig %f'%(*ground_center,nsi,nsj,rsig))
-    for i in range(nsi):
-        for j in range(nsj):
-            logger.debug('ploc %d %d'%(c[0],c[1]))
-            #ps or I-c0
-            Im[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]]=SE_pe(c,Im[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],w_W[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],w_N[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],w_NW[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],di[c[0]:c[0]+ps[0],c[1]:c[1]+ps[1]],rsig)
-            c[1]+=pr[1]
-        if c[1]<J-pr[1]:
-            logger.debug('p margin loc %d %d'%(c[0],c[1]))
-            psm=J-c[1]
-            #(ps[0],psm) or I-c0
-            Im[c[0]:c[0]+ps[0],c[1]:c[1]+psm]=SE_pe(c,Im[c[0]:c[0]+ps[0],c[1]:c[1]+psm],w_W[c[0]:c[0]+ps[0],c[1]:c[1]+psm],w_N[c[0]:c[0]+ps[0],c[1]:c[1]+psm],w_NW[c[0]:c[0]+ps[0],c[1]:c[1]+psm],di[c[0]:c[0]+ps[0],c[1]:c[1]+psm],rsig)
-        c[0]+=pr[0]
-        c[1]=ground_center[1]
-        # ax = plt.subplot(111)
-        # plt.imshow(Im)
-        # ax.set_title('Iop')
-        # plt.colorbar(orientation='horizontal')
-        # plt.show()
-    if c[0]<I-pr[0]:
-        logger.debug('p margin loc %d %d'%(c[0],c[1]))
-        psm=I-c[0]
-        # prm=psm//2
-        # nsj=(J-c[1])//prm
-        for j in range(nsj):
-            #(psm,ps[1])
-            Im[c[0]:c[0]+psm,c[1]:c[1]+ps[1]]=SE_pe(c,Im[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],w_W[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],w_N[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],w_NW[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],di[c[0]:c[0]+psm,c[1]:c[1]+ps[1]],rsig)
-            c[1]+=pr[1]
-        if c[1]<J-pr[1]:
-            logger.debug('p margin loc %d %d'%(c[0],c[1]))
-            psmj=J-c[1]
-            #(psm,psmj)
-            Im[c[0]:c[0]+psm,c[1]:c[1]+psmj]=SE_pe(c,Im[c[0]:c[0]+psm,c[1]:c[1]+psmj],w_W[c[0]:c[0]+psm,c[1]:c[1]+psmj],w_N[c[0]:c[0]+psm,c[1]:c[1]+psmj],w_NW[c[0]:c[0]+psm,c[1]:c[1]+psmj],di[c[0]:c[0]+psm,c[1]:c[1]+psmj],rsig)
-        ax = plt.subplot(111)
-        plt.imshow(Im)
-        ax.set_title('Iopm')
-        plt.colorbar(orientation='horizontal')
-        plt.show()
-    return Im
 
 def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     """Return mean shift image."""
@@ -170,33 +121,39 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     def ms_seq():
         """Return binary img."""
         nonlocal w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,gloc,floc,di,asig
-        # umax=.5
-        sl=np.array((2,2))
-        ps=2*sl
         Io= np.ones((I,J)).astype('int')
         # Io[floc[0],floc[1]] = 1
         Io[gloc[0],gloc[1]] = 0
-        # g f heat expand
-        Io=SE_ps(gloc,Io,ps,sl,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,asig,I,J)
-        # Io=SE_ps(floc,Io,ps,sl,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di,asig,I,J)
+        # g heat expand
+        Io[gloc[0]:,gloc[1]:]=SE_pe(gloc,Io[gloc[0]:,gloc[1]:],w_W[gloc[0]:,gloc[1]:],w_N[gloc[0]:,gloc[1]:],w_NW[gloc[0]:,gloc[1]:],di[gloc[0]:,gloc[1]:],asig)
         # NW=SE(counterclock 180 img)
-        gloc=(I-gloc[0]-1,J-gloc[1]-1)
-        floc=(I-floc[0]-1,J-floc[1]-1)
+        rg=(I-gloc[0]-1,J-gloc[1]-1)
         Io=np.rot90(Io,2)
-        rw_E=np.rot90(w_W ,2)
-        rw_S=np.rot90(w_N ,2)
-        rw_SE=np.rot90(w_NW,2)
-        rw_NE=np.rot90(w_SW,2)
         rw_W=np.rot90(w_E ,2)
         rw_N=np.rot90(w_S ,2)
         rw_NW=np.rot90(w_SE,2)
-        rw_SW=np.rot90(w_NE ,2)
         rdi=np.rot90(di ,2)
-        Io=SE_ps(gloc,Io,ps,sl,rw_E,rw_S,rw_SE,rw_NE,rw_W,rw_N,rw_NW,rw_SW,rdi,asig,I,J)
-        # Io=SE_ps(floc,Io,ps,sl,rw_E,rw_S,rw_SE,rw_NE,rw_W,rw_N,rw_NW,rw_SW,rdi,asig,I,J)
+        Io[rg[0]:,rg[1]:]=SE_pe(rg,Io[rg[0]:,rg[1]:],rw_W[rg[0]:,rg[1]:],rw_N[rg[0]:,rg[1]:],rw_NW[rg[0]:,rg[1]:],rdi[rg[0]:,rg[1]:],asig)
         Io=np.rot90(Io,2)
+        # NE
+        Io=np.rot90(Io,1)
+        rg=(J-gloc[1]-1,gloc[0])
+        rw_W=np.rot90(w_N ,1)
+        rw_N=np.rot90(w_E ,1)
+        rw_NW=np.rot90(w_NE,1)
+        rdi=np.rot90(di ,1)
+        Io[rg[0]:,rg[1]:]=SE_pe(rg,Io[rg[0]:,rg[1]:],rw_W[rg[0]:,rg[1]:],rw_N[rg[0]:,rg[1]:],rw_NW[rg[0]:,rg[1]:],rdi[rg[0]:,rg[1]:],asig)
+        Io=np.rot90(Io,-1)
+        # SW
+        Io=np.rot90(Io,-1)
+        rg=(gloc[1],I-1-gloc[0])
+        rw_W=np.rot90(w_S ,-1)
+        rw_N=np.rot90(w_W ,-1)
+        rw_NW=np.rot90(w_SW,-1)
+        rdi=np.rot90(di ,-1)
+        Io[rg[0]:,rg[1]:]=SE_pe(rg,Io[rg[0]:,rg[1]:],rw_W[rg[0]:,rg[1]:],rw_N[rg[0]:,rg[1]:],rw_NW[rg[0]:,rg[1]:],rdi[rg[0]:,rg[1]:],asig)
+        Io=np.rot90(Io,1)
 
-        # Io = np.tanh(Io/asig)
         ax = plt.subplot(111)
         plt.imshow(Io)
         ax.set_title('Io')
@@ -214,14 +171,13 @@ if __name__ == "__main__":
 
     data_path = os.path.join(os.getcwd(), 'photos')
     im_flist = os.listdir(data_path)
-    im_no = 1
-    # im_no = 3
+    # im_no = 1
+    im_no = 3
     im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
-    # im = im[40:60, 10:50, :]
-    im=im[120:130,160:200,:]
-    ig=im/1
+    im = im[40:60, 10:50, :]
+    # im=im[120:130,160:200,:]
 
-    ig=msimg(ig)
+    ig=msimg(im/1)
 
     ax = plt.subplot(121)
     # plt.imshow(im[:,:,0])
