@@ -116,7 +116,6 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
 
     for w in (w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW):
         w[gloc[0],gloc[1]]=0
-        w[floc[0],floc[1]]=0
 
     def ms_seq():
         """Return binary img."""
