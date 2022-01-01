@@ -11,6 +11,7 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     """Return mean shift image."""
     fn = strftime("%Y%b%d", gmtime())
     I, J, K = img.shape
+    img=img.astype('int')
     pim = np.concatenate((np.zeros((1,J,K)), img, np.zeros((1,J,K))), axis=0) #padding
     pim = np.concatenate((np.zeros((I+2,1,K)), pim,np.zeros((I+2,1,K))), axis=1)
     if init_wt == 1:
@@ -46,9 +47,9 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         w_NW/=wn
         w_SW/=wn
         di=np.sum(np.stack((w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW),0),0)
-        # fn = 'wt_rsig%f_%s' % (rsig, fn)
-        # with open('%s.npy' % fn, 'wb') as f:
-        #     np.save(f, np.stack((w_E,w_S,w_SE,w_NE)))
+        fn = 'wt_rsig%f_%s' % (rsig, fn)
+        with open('%s.npy' % fn, 'wb') as f:
+            np.save(f, np.stack((w_E,w_S,w_SE,w_NE)))
 
     else:
         fn = 'wt_rsig%f_%s' % (rsig, fn)
@@ -68,32 +69,37 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     floc=(gloc[0]+lij[floc][0],gloc[1]+lij[floc][1])
     print('floc %d %d'%(floc[0],floc[1]))
 
-    for w in (w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW):
-        w[gloc[0],gloc[1]]=0
-        w[floc[0],floc[1]]=0
 
-    pim = np.ones((I+2,J+2)).astype('int')
-    pim[gloc[0]+1,gloc[1]+1] = 0
-    pim[1:-1,1:-1][np.sum(abs(img-img[gloc]),-1)<np.sum(abs(img-img[floc]),-1)]=0 #gloc=0
-    def msiter(niter=1000):
-        nonlocal pim, w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW
-        for i in range(niter):
-            e1 = w_E*(pim[1:-1, 2:]^1)+ w_S*(pim[2:, 1:-1]^1)+w_W*(pim[1:-1, :J]^1)+w_N*(pim[:I, 1:-1]^1)\
-                 +w_SE*(pim[2:, 2:]^1)+ w_NE*(pim[:I, 2:]^1)+w_NW*(pim[:I, :J]^1) + w_SW*(pim[2:, :J]^1)/di
-            e0 = w_E*(pim[1:-1, 2:]^0)+ w_S*(pim[2:, 1:-1]^0)+w_W*(pim[1:-1, :J]^0)+w_N*(pim[:I, 1:-1]^0) \
-                 +w_SE*(pim[2:, 2:]^0)+ w_NE*(pim[:I, 2:]^0)+w_NW*(pim[:I, :J]^0) + w_SW*(pim[2:, :J]^0)/di
-            hase=(e1+e0)!=0
-            pim[1:-1,1:-1][hase]=(1/(1+np.exp((e1-e0)[hase]/(e1+e0)[hase]))>np.random.rand(I,J)[hase]).astype('int')
-            # pim[1:-1,1:-1]=(1/(1+np.exp((e1-e0)))>np.random.rand(I,J)).astype('int')
-            pim[gloc[0]+1,gloc[1]+1] = 0
-            pim[floc[0]+1,floc[1]+1] = 1
-            # print(e1[e1!=0])
-            # print(e1.shape)
-        return
+    bim = np.ones((I,J)).astype('int')
+    bim[gloc[0],gloc[1]] = -1
+    bim[np.sum(abs(img-img[gloc]),-1)<np.sum(abs(img-img[floc]),-1)]=-1 #gloc=-1
 
-    msiter()
-    return pim[1:-1,1:-1]
-    # return img
+    gc=((gloc[0],floc[0])[gloc[0]>floc[0]],(gloc[1],floc[1])[gloc[1]>floc[1]])
+    print('top left loc of gf %d %d'%(gc[0],gc[1]))
+    k=3
+    miter=10
+    #source
+    for _ in range(miter):
+        bim[gc[0]:gc[0]+k,gc[1]:gc[1]+k]=((np.multiply(w_W[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]:gc[0]+k,gc[1]-1:gc[1]+k-1])+np.multiply(w_N[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]-1:gc[0]+k-1,gc[1]:gc[1]+k])+np.multiply(w_E[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]:gc[0]+k,gc[1]+1:gc[1]+k+1])+np.multiply(w_S[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]+1:gc[0]+k+1,gc[1]:gc[1]+k])+np.multiply(w_SE[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]+1:gc[0]+k+1,gc[1]+1:gc[1]+k+1])+np.multiply(w_SW[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]+1:gc[0]+k+1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NW[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]-1:gc[0]+k-1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NE[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]-1:gc[0]+k-1,gc[1]+1:gc[1]+k+1]))/di[gc[0]:gc[0]+k,gc[1]:gc[1]+k]>0)*2-1
+    # bim[gloc[0],gloc[1]] = -1
+    ni=(I-gc[0])//k
+    nj=(J-gc[1])//k
+    m=min(ni,nj)
+    for j in range(1,nj):
+        for _ in range(miter):
+            bim[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+k+j*k]=((np.multiply(w_W[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]:gc[0]+k,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_N[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]-1:gc[0]+k-1,gc[1]+j*k:gc[1]+j*k+k])+np.multiply(w_E[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]:gc[0]+k,gc[1]+j*k+1:gc[1]+j*k+k+1])+np.multiply(w_S[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]+1:gc[0]+k+1,gc[1]+j*k:gc[1]+j*k+k])+np.multiply(w_SE[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]+1:gc[0]+k+1,gc[1]+j*k+1:gc[1]+j*k+k+1])+np.multiply(w_SW[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]+1:gc[0]+k+1,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_NW[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]-1:gc[0]+k-1,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_NE[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]-1:gc[0]+k-1,gc[1]+j*k+1:gc[1]+j*k+k+1]))/di[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+k+j*k]>0)*2-1
+    for i in range(1,ni):
+        for _ in range(miter):
+            bim[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k]=((np.multiply(w_W[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k:gc[0]+i*k+k,gc[1]-1:gc[1]+k-1])+np.multiply(w_N[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k-1:gc[0]+i*k+k-1,gc[1]:gc[1]+k])+np.multiply(w_E[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k:gc[0]+i*k+k,gc[1]+1:gc[1]+k+1])+np.multiply(w_S[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k+1:gc[0]+i*k+k+1,gc[1]:gc[1]+k])+np.multiply(w_SE[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k+1:gc[0]+i*k+k+1,gc[1]+1:gc[1]+k+1])+np.multiply(w_SW[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k+1:gc[0]+i*k+k+1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NW[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k-1:gc[0]+i*k+k-1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NE[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k-1:gc[0]+i*k+k-1,gc[1]+1:gc[1]+k+1]))/di[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k]>0)*2-1
+    for i in range(0,m-1):
+        for r in range(i+1,ni):
+            for _ in range(miter):
+                bim[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k]=((np.multiply(w_W[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k-1:gc[1]+(i+1)*k+k-1])+np.multiply(w_N[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r-1:gc[0]+k*r+k-1,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k])+np.multiply(w_E[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k+1:gc[1]+(i+1)*k+k+1])+np.multiply(w_S[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r+1:gc[0]+k*r+k+1,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k])+np.multiply(w_SE[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r+1:gc[0]+k*r+k+1,gc[1]+(i+1)*k+1:gc[1]+(i+1)*k+k+1])+np.multiply(w_SW[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r+1:gc[0]+k*r+k+1,gc[1]+(i+1)*k-1:gc[1]+(i+1)*k+k-1])+np.multiply(w_NW[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r-1:gc[0]+k*r+k-1,gc[1]+(i+1)*k-1:gc[1]+(i+1)*k+k-1])+np.multiply(w_NE[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r-1:gc[0]+k*r+k-1,gc[1]+(i+1)*k+1:gc[1]+(i+1)*k+k+1]))/di[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k]>0)*2-1
+        for r in range(i+1,nj):
+            for _ in range(miter):
+                bim[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k]=((np.multiply(w_W[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r-1:gc[1]+k*r+k-1])+np.multiply(w_N[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k-1:gc[0]+(i+1)*k+k-1,gc[1]+k*r:gc[1]+k*r+k])+np.multiply(w_E[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r+1:gc[1]+k*r+k+1])+np.multiply(w_S[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k+1:gc[0]+(i+1)*k+k+1,gc[1]+k*r:gc[1]+k*r+k])+np.multiply(w_SE[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k+1:gc[0]+(i+1)*k+k+1,gc[1]+k*r+1:gc[1]+k*r+k+1])+np.multiply(w_SW[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k+1:gc[0]+(i+1)*k+k+1,gc[1]+k*r-1:gc[1]+k*r+k-1])+np.multiply(w_NW[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k-1:gc[0]+(i+1)*k+k-1,gc[1]+k*r-1:gc[1]+k*r+k-1])+np.multiply(w_NE[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k-1:gc[0]+(i+1)*k+k-1,gc[1]+k*r+1:gc[1]+k*r+k+1]))/di[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k]>0)*2-1
+
+    return bim
 
 
 if __name__ == "__main__":
