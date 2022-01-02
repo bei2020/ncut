@@ -6,6 +6,28 @@ import copy
 import os
 from time import gmtime, strftime
 
+def SE_it(gc,img,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di):
+    I, J= img.shape
+    k=3
+    miter=10
+    ni=(I-gc[0]-1)//k
+    nj=(J-gc[1]-1)//k
+    m=min(ni,nj)
+    for j in range(1,nj):
+        for _ in range(miter):
+            img[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+k+j*k]=((np.multiply(w_W[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]:gc[0]+k,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_N[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]-1:gc[0]+k-1,gc[1]+j*k:gc[1]+j*k+k])+np.multiply(w_E[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]:gc[0]+k,gc[1]+j*k+1:gc[1]+j*k+k+1])+np.multiply(w_S[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]+1:gc[0]+k+1,gc[1]+j*k:gc[1]+j*k+k])+np.multiply(w_SE[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]+1:gc[0]+k+1,gc[1]+j*k+1:gc[1]+j*k+k+1])+np.multiply(w_SW[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]+1:gc[0]+k+1,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_NW[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]-1:gc[0]+k-1,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_NE[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]-1:gc[0]+k-1,gc[1]+j*k+1:gc[1]+j*k+k+1]))/di[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+k+j*k]>0)*2-1
+    for i in range(1,ni):
+        for _ in range(miter):
+            img[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k]=((np.multiply(w_W[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k:gc[0]+i*k+k,gc[1]-1:gc[1]+k-1])+np.multiply(w_N[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k-1:gc[0]+i*k+k-1,gc[1]:gc[1]+k])+np.multiply(w_E[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k:gc[0]+i*k+k,gc[1]+1:gc[1]+k+1])+np.multiply(w_S[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k+1:gc[0]+i*k+k+1,gc[1]:gc[1]+k])+np.multiply(w_SE[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k+1:gc[0]+i*k+k+1,gc[1]+1:gc[1]+k+1])+np.multiply(w_SW[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k+1:gc[0]+i*k+k+1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NW[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k-1:gc[0]+i*k+k-1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NE[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k-1:gc[0]+i*k+k-1,gc[1]+1:gc[1]+k+1]))/di[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k]>0)*2-1
+    for i in range(0,m-1):
+        for r in range(i+1,ni):
+            for _ in range(miter):
+                img[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k]=((np.multiply(w_W[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k-1:gc[1]+(i+1)*k+k-1])+np.multiply(w_N[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r-1:gc[0]+k*r+k-1,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k])+np.multiply(w_E[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k+1:gc[1]+(i+1)*k+k+1])+np.multiply(w_S[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r+1:gc[0]+k*r+k+1,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k])+np.multiply(w_SE[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r+1:gc[0]+k*r+k+1,gc[1]+(i+1)*k+1:gc[1]+(i+1)*k+k+1])+np.multiply(w_SW[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r+1:gc[0]+k*r+k+1,gc[1]+(i+1)*k-1:gc[1]+(i+1)*k+k-1])+np.multiply(w_NW[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r-1:gc[0]+k*r+k-1,gc[1]+(i+1)*k-1:gc[1]+(i+1)*k+k-1])+np.multiply(w_NE[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r-1:gc[0]+k*r+k-1,gc[1]+(i+1)*k+1:gc[1]+(i+1)*k+k+1]))/di[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k]>0)*2-1
+        for r in range(i+1,nj):
+            for _ in range(miter):
+                img[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k]=((np.multiply(w_W[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r-1:gc[1]+k*r+k-1])+np.multiply(w_N[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k-1:gc[0]+(i+1)*k+k-1,gc[1]+k*r:gc[1]+k*r+k])+np.multiply(w_E[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r+1:gc[1]+k*r+k+1])+np.multiply(w_S[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k+1:gc[0]+(i+1)*k+k+1,gc[1]+k*r:gc[1]+k*r+k])+np.multiply(w_SE[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k+1:gc[0]+(i+1)*k+k+1,gc[1]+k*r+1:gc[1]+k*r+k+1])+np.multiply(w_SW[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k+1:gc[0]+(i+1)*k+k+1,gc[1]+k*r-1:gc[1]+k*r+k-1])+np.multiply(w_NW[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k-1:gc[0]+(i+1)*k+k-1,gc[1]+k*r-1:gc[1]+k*r+k-1])+np.multiply(w_NE[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k-1:gc[0]+(i+1)*k+k-1,gc[1]+k*r+1:gc[1]+k*r+k+1]))/di[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k]>0)*2-1
+
+    return img
 
 def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     """Return mean shift image."""
@@ -69,7 +91,6 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     floc=(gloc[0]+lij[floc][0],gloc[1]+lij[floc][1])
     print('floc %d %d'%(floc[0],floc[1]))
 
-
     bim = np.ones((I,J)).astype('int')
     bim[gloc[0],gloc[1]] = -1
     bim[np.sum(abs(img-img[gloc]),-1)<np.sum(abs(img-img[floc]),-1)]=-1 #gloc=-1
@@ -77,27 +98,55 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     gc=((gloc[0],floc[0])[gloc[0]>floc[0]],(gloc[1],floc[1])[gloc[1]>floc[1]])
     print('top left loc of gf %d %d'%(gc[0],gc[1]))
     k=3
-    miter=10
     #source
-    for _ in range(miter):
+    for _ in range(10):
         bim[gc[0]:gc[0]+k,gc[1]:gc[1]+k]=((np.multiply(w_W[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]:gc[0]+k,gc[1]-1:gc[1]+k-1])+np.multiply(w_N[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]-1:gc[0]+k-1,gc[1]:gc[1]+k])+np.multiply(w_E[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]:gc[0]+k,gc[1]+1:gc[1]+k+1])+np.multiply(w_S[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]+1:gc[0]+k+1,gc[1]:gc[1]+k])+np.multiply(w_SE[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]+1:gc[0]+k+1,gc[1]+1:gc[1]+k+1])+np.multiply(w_SW[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]+1:gc[0]+k+1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NW[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]-1:gc[0]+k-1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NE[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]-1:gc[0]+k-1,gc[1]+1:gc[1]+k+1]))/di[gc[0]:gc[0]+k,gc[1]:gc[1]+k]>0)*2-1
-    # bim[gloc[0],gloc[1]] = -1
-    ni=(I-gc[0])//k
-    nj=(J-gc[1])//k
-    m=min(ni,nj)
-    for j in range(1,nj):
-        for _ in range(miter):
-            bim[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+k+j*k]=((np.multiply(w_W[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]:gc[0]+k,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_N[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]-1:gc[0]+k-1,gc[1]+j*k:gc[1]+j*k+k])+np.multiply(w_E[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]:gc[0]+k,gc[1]+j*k+1:gc[1]+j*k+k+1])+np.multiply(w_S[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]+1:gc[0]+k+1,gc[1]+j*k:gc[1]+j*k+k])+np.multiply(w_SE[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]+1:gc[0]+k+1,gc[1]+j*k+1:gc[1]+j*k+k+1])+np.multiply(w_SW[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]+1:gc[0]+k+1,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_NW[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]-1:gc[0]+k-1,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_NE[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],bim[gc[0]-1:gc[0]+k-1,gc[1]+j*k+1:gc[1]+j*k+k+1]))/di[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+k+j*k]>0)*2-1
-    for i in range(1,ni):
-        for _ in range(miter):
-            bim[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k]=((np.multiply(w_W[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k:gc[0]+i*k+k,gc[1]-1:gc[1]+k-1])+np.multiply(w_N[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k-1:gc[0]+i*k+k-1,gc[1]:gc[1]+k])+np.multiply(w_E[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k:gc[0]+i*k+k,gc[1]+1:gc[1]+k+1])+np.multiply(w_S[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k+1:gc[0]+i*k+k+1,gc[1]:gc[1]+k])+np.multiply(w_SE[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k+1:gc[0]+i*k+k+1,gc[1]+1:gc[1]+k+1])+np.multiply(w_SW[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k+1:gc[0]+i*k+k+1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NW[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k-1:gc[0]+i*k+k-1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NE[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],bim[gc[0]+i*k-1:gc[0]+i*k+k-1,gc[1]+1:gc[1]+k+1]))/di[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k]>0)*2-1
-    for i in range(0,m-1):
-        for r in range(i+1,ni):
-            for _ in range(miter):
-                bim[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k]=((np.multiply(w_W[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k-1:gc[1]+(i+1)*k+k-1])+np.multiply(w_N[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r-1:gc[0]+k*r+k-1,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k])+np.multiply(w_E[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k+1:gc[1]+(i+1)*k+k+1])+np.multiply(w_S[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r+1:gc[0]+k*r+k+1,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k])+np.multiply(w_SE[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r+1:gc[0]+k*r+k+1,gc[1]+(i+1)*k+1:gc[1]+(i+1)*k+k+1])+np.multiply(w_SW[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r+1:gc[0]+k*r+k+1,gc[1]+(i+1)*k-1:gc[1]+(i+1)*k+k-1])+np.multiply(w_NW[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r-1:gc[0]+k*r+k-1,gc[1]+(i+1)*k-1:gc[1]+(i+1)*k+k-1])+np.multiply(w_NE[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],bim[gc[0]+k*r-1:gc[0]+k*r+k-1,gc[1]+(i+1)*k+1:gc[1]+(i+1)*k+k+1]))/di[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k]>0)*2-1
-        for r in range(i+1,nj):
-            for _ in range(miter):
-                bim[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k]=((np.multiply(w_W[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r-1:gc[1]+k*r+k-1])+np.multiply(w_N[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k-1:gc[0]+(i+1)*k+k-1,gc[1]+k*r:gc[1]+k*r+k])+np.multiply(w_E[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r+1:gc[1]+k*r+k+1])+np.multiply(w_S[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k+1:gc[0]+(i+1)*k+k+1,gc[1]+k*r:gc[1]+k*r+k])+np.multiply(w_SE[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k+1:gc[0]+(i+1)*k+k+1,gc[1]+k*r+1:gc[1]+k*r+k+1])+np.multiply(w_SW[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k+1:gc[0]+(i+1)*k+k+1,gc[1]+k*r-1:gc[1]+k*r+k-1])+np.multiply(w_NW[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k-1:gc[0]+(i+1)*k+k-1,gc[1]+k*r-1:gc[1]+k*r+k-1])+np.multiply(w_NE[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],bim[gc[0]+(i+1)*k-1:gc[0]+(i+1)*k+k-1,gc[1]+k*r+1:gc[1]+k*r+k+1]))/di[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k]>0)*2-1
+    bim=SE_it(gc,bim,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
+    # NW
+    bim=np.rot90(bim,2)
+    rg=(gc[0]+k-1,gc[1]+k-1)
+    rg=(I-rg[0]-1,J-rg[1]-1)
+    rw_E=np.rot90(w_W ,2)
+    rw_S=np.rot90(w_N ,2)
+    rw_SE=np.rot90(w_NW,2)
+    rw_NE=np.rot90(w_SW,2)
+    rw_N=np.rot90(w_S ,2)
+    rw_W=np.rot90(w_E ,2)
+    rw_NW=np.rot90(w_SE,2)
+    rw_SW=np.rot90(w_NE,2)
+    rdi=np.rot90(di ,2)
+    bim=SE_it(rg,bim,rw_E,rw_S,rw_SE,rw_NE,rw_W,rw_N,rw_NW,rw_SW,rdi)
+    bim=np.rot90(bim,2)
+    # NE
+    bim=np.rot90(bim,1)
+    rg=(gc[0]+k-1,gc[1])
+    rg=(J-rg[1]-1,rg[0])
+    rw_E=np.rot90(w_S ,1)
+    rw_S=np.rot90(w_W ,1)
+    rw_SE=np.rot90(w_SW,1)
+    rw_NE=np.rot90(w_SE,1)
+    rw_N=np.rot90(w_E ,1)
+    rw_W=np.rot90(w_N ,1)
+    rw_NW=np.rot90(w_NE,1)
+    rw_SW=np.rot90(w_NW,1)
+    rdi=np.rot90(di ,1)
+    bim=SE_it(rg,bim,rw_E,rw_S,rw_SE,rw_NE,rw_W,rw_N,rw_NW,rw_SW,rdi)
+    bim=np.rot90(bim,-1)
+    # SW
+    bim=np.rot90(bim,-1)
+    rg=(gc[0],gc[1]+k-1)
+    rg=(rg[1],I-1-rg[0])
+    rw_E=np.rot90(w_N ,-1)
+    rw_S=np.rot90(w_E ,-1)
+    rw_SE=np.rot90(w_NE,-1)
+    rw_NE=np.rot90(w_NW,-1)
+    rw_W=np.rot90(w_S ,-1)
+    rw_N=np.rot90(w_W ,-1)
+    rw_NW=np.rot90(w_SW,-1)
+    rw_SW=np.rot90(w_SE,-1)
+    rdi=np.rot90(di ,-1)
+    bim=SE_it(rg,bim,rw_E,rw_S,rw_SE,rw_NE,rw_W,rw_N,rw_NW,rw_SW,rdi)
+    bim=np.rot90(bim,1)
 
     return bim
 
