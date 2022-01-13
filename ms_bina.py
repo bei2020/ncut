@@ -157,17 +157,14 @@ if __name__ == "__main__":
 
     data_path = os.path.join(os.getcwd(), 'photos')
     im_flist = os.listdir(data_path)
-    # im_no = 5
+    # im_no = 1
     im_no = 3
     im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
-    # im=im[110:150,140:190,:]
+    # im=im[:220,120:380,:]
     # im= im[400:410, 610:625, :]
     # im= im[400:440, 610:650, :]
+    im=im[40:80,10:60,:]
     # im = im[40:60, 10:50, :]
-    # im=im[40:80,10:60,:]
-    # im=im[45:55,50:60,:]
-    im = im[40:60, 10:50, :]
-    # im= im[360:400, 450:650, :]
 
     ig = msimg(im/1, mcont=0)
 

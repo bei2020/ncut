@@ -12,7 +12,7 @@ ncut with eigensolver Lanczos `segment.py`
 `cluster.py`
 ![denoise](imgs/butt_ms.png)
 ### binary label
-`ms_bina.py`
+`ms_edge.py`
 ![bina](imgs/butt_edge_iter1000.png)
 
 
