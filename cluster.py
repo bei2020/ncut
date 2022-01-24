@@ -17,8 +17,6 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     gamma = .9
     v = np.zeros((I+2,J+2,K))
     if init_wt == 1:
-        nint = 2
-        # 1234:ESWN, Io: DHWC, D=8 directions
         grad_E = pim[1:1 + I, 2:, :]-pim[1:1 + I, 1:-1, :]
         grad_S = pim[2:, 1:1 + J, :]-pim[1:-1, 1:1 + J, :]
         grad_SE = pim[2:, 2:, :] - pim[1:-1, 1:-1, :]
@@ -26,7 +24,6 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         if not rsig:
             rsig = grad_m(np.hstack((grad_E,grad_S,grad_SE,grad_NE)))
         print('rsig %f' % rsig)
-        a = rsig ** 2 / (K + 2)
         w_E = edge_weight(grad_E,rsig)
         w_E[:,-1]=0
         w_S = edge_weight(grad_S, rsig)
@@ -48,10 +45,10 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
 
     else:
         fn = 'wt_rsig%f_%s' % (rsig, fn)
-        a = rsig ** 2 / (K + 2)
         with open('%s.npy' % fn, 'rb') as f:
             wt = np.load(f)
         w_E,w_S,w_SE,w_NE=wt
+    a = rsig ** 2 / (K + 2)
 
     w_W = np.hstack((np.zeros((I, 1)), w_E[:, :-1]))
     w_N = np.vstack((np.zeros((1, J)), w_S[:-1, :,]))
