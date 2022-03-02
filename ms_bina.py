@@ -16,7 +16,6 @@ def SE_it(gc,img,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di):
     if m==0:
         return img
     for j in range(1,nj):
-        print('nj ni %d %d'%(nj,ni))
         for _ in range(miter):
             img[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+k+j*k]=((np.multiply(w_W[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]:gc[0]+k,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_N[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]-1:gc[0]+k-1,gc[1]+j*k:gc[1]+j*k+k])+np.multiply(w_E[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]:gc[0]+k,gc[1]+j*k+1:gc[1]+j*k+k+1])+np.multiply(w_S[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]+1:gc[0]+k+1,gc[1]+j*k:gc[1]+j*k+k])+np.multiply(w_SE[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]+1:gc[0]+k+1,gc[1]+j*k+1:gc[1]+j*k+k+1])+np.multiply(w_SW[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]+1:gc[0]+k+1,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_NW[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]-1:gc[0]+k-1,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_NE[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]-1:gc[0]+k-1,gc[1]+j*k+1:gc[1]+j*k+k+1]))*2-di[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+k+j*k])>0
     for i in range(1,ni):
@@ -163,10 +162,11 @@ if __name__ == "__main__":
     im_no = 4
     im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
     # im=im[:220,120:380,:]
+    # im=im[110:150,140:190,:]
     # im= im[400:410, 610:625, :]
     # im= im[400:440, 610:650, :]
-    im=im[40:80,10:60,:]
-    # im = im[40:60, 10:50, :]
+    # im=im[40:80,10:60,:]
+    im = im[40:60, 10:40, :]
 
     ig = msimg(im/1, mcont=0)
 
