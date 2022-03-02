@@ -1,9 +1,9 @@
+import os
 import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.image as mpimg
 from segment import edge_weight,grad_m
-import copy
-import os
+from util import mpb_maxloc
 from time import gmtime, strftime
 
 def SE_it(gc,img,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di):
@@ -13,7 +13,10 @@ def SE_it(gc,img,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di):
     ni=(I-gc[0]-1)//k
     nj=(J-gc[1]-1)//k
     m=min(ni,nj)
+    if m==0:
+        return img
     for j in range(1,nj):
+        print('nj ni %d %d'%(nj,ni))
         for _ in range(miter):
             img[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+k+j*k]=((np.multiply(w_W[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]:gc[0]+k,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_N[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]-1:gc[0]+k-1,gc[1]+j*k:gc[1]+j*k+k])+np.multiply(w_E[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]:gc[0]+k,gc[1]+j*k+1:gc[1]+j*k+k+1])+np.multiply(w_S[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]+1:gc[0]+k+1,gc[1]+j*k:gc[1]+j*k+k])+np.multiply(w_SE[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]+1:gc[0]+k+1,gc[1]+j*k+1:gc[1]+j*k+k+1])+np.multiply(w_SW[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]+1:gc[0]+k+1,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_NW[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]-1:gc[0]+k-1,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_NE[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]-1:gc[0]+k-1,gc[1]+j*k+1:gc[1]+j*k+k+1]))*2-di[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+k+j*k])>0
     for i in range(1,ni):
@@ -84,8 +87,7 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         w_SW = np.hstack((np.zeros((I, 1)), np.vstack((w_NE[1:,:-1], np.zeros((1, J - 1))))))
         di=np.sum(np.stack((w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW),0),0)
 
-    gloc=np.argmin(di[1:-1,1:-1])
-    gloc = (gloc // (J - 2) + 1, gloc % (J - 2) + 1)
+    gloc=mpb_maxloc(img)
     print('gloc %d %d'%(gloc[0],gloc[1]))
     floc=np.argmin(np.stack((w_E,w_S,w_W,w_N,w_SE,w_SW,w_NW,w_NE))[:,gloc[0],gloc[1]])
     floc=(gloc[0]+lij[floc][0],gloc[1]+lij[floc][1])
@@ -157,8 +159,8 @@ if __name__ == "__main__":
 
     data_path = os.path.join(os.getcwd(), 'photos')
     im_flist = os.listdir(data_path)
-    # im_no = 1
-    im_no = 3
+    # im_no = 0
+    im_no = 4
     im = mpimg.imread(os.path.join(data_path, im_flist[im_no]))
     # im=im[:220,120:380,:]
     # im= im[400:410, 610:625, :]
