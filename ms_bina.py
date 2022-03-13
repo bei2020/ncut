@@ -3,31 +3,46 @@ import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.image as mpimg
 from segment import edge_weight,grad_m
-from util import mpb_maxloc
 from time import gmtime, strftime
 
 def SE_it(gc,img,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di):
     I, J= img.shape
     k=3
-    miter=10
     ni=(I-gc[0]-1)//k
     nj=(J-gc[1]-1)//k
     m=min(ni,nj)
     if m==0:
         return img
     for j in range(1,nj):
-        for _ in range(miter):
-            img[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+k+j*k]=((np.multiply(w_W[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]:gc[0]+k,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_N[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]-1:gc[0]+k-1,gc[1]+j*k:gc[1]+j*k+k])+np.multiply(w_E[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]:gc[0]+k,gc[1]+j*k+1:gc[1]+j*k+k+1])+np.multiply(w_S[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]+1:gc[0]+k+1,gc[1]+j*k:gc[1]+j*k+k])+np.multiply(w_SE[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]+1:gc[0]+k+1,gc[1]+j*k+1:gc[1]+j*k+k+1])+np.multiply(w_SW[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]+1:gc[0]+k+1,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_NW[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]-1:gc[0]+k-1,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_NE[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]-1:gc[0]+k-1,gc[1]+j*k+1:gc[1]+j*k+k+1]))*2-di[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+k+j*k])>0
+        p1=((np.multiply(w_W[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]:gc[0]+k,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_N[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]-1:gc[0]+k-1,gc[1]+j*k:gc[1]+j*k+k])+np.multiply(w_E[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]:gc[0]+k,gc[1]+j*k+1:gc[1]+j*k+k+1])+np.multiply(w_S[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]+1:gc[0]+k+1,gc[1]+j*k:gc[1]+j*k+k])+np.multiply(w_SE[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]+1:gc[0]+k+1,gc[1]+j*k+1:gc[1]+j*k+k+1])+np.multiply(w_SW[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]+1:gc[0]+k+1,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_NW[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]-1:gc[0]+k-1,gc[1]+j*k-1:gc[1]+j*k+k-1])+np.multiply(w_NE[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+j*k+k],img[gc[0]-1:gc[0]+k-1,gc[1]+j*k+1:gc[1]+j*k+k+1]))*2-di[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+k+j*k])
+        # p1=1/(1+np.exp(-p1/T))
+        # p1m=p1>np.random.rand(1)
+        p1m=p1>0
+        img[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+k+j*k][p1m]=1
+        img[gc[0]:gc[0]+k,gc[1]+j*k:gc[1]+k+j*k][np.logical_not(p1m)]=-1
+
     for i in range(1,ni):
-        for _ in range(miter):
-            img[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k]=((np.multiply(w_W[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k:gc[0]+i*k+k,gc[1]-1:gc[1]+k-1])+np.multiply(w_N[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k-1:gc[0]+i*k+k-1,gc[1]:gc[1]+k])+np.multiply(w_E[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k:gc[0]+i*k+k,gc[1]+1:gc[1]+k+1])+np.multiply(w_S[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k+1:gc[0]+i*k+k+1,gc[1]:gc[1]+k])+np.multiply(w_SE[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k+1:gc[0]+i*k+k+1,gc[1]+1:gc[1]+k+1])+np.multiply(w_SW[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k+1:gc[0]+i*k+k+1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NW[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k-1:gc[0]+i*k+k-1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NE[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k-1:gc[0]+i*k+k-1,gc[1]+1:gc[1]+k+1]))*2-di[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k])>0
+        p1=((np.multiply(w_W[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k:gc[0]+i*k+k,gc[1]-1:gc[1]+k-1])+np.multiply(w_N[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k-1:gc[0]+i*k+k-1,gc[1]:gc[1]+k])+np.multiply(w_E[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k:gc[0]+i*k+k,gc[1]+1:gc[1]+k+1])+np.multiply(w_S[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k+1:gc[0]+i*k+k+1,gc[1]:gc[1]+k])+np.multiply(w_SE[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k+1:gc[0]+i*k+k+1,gc[1]+1:gc[1]+k+1])+np.multiply(w_SW[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k+1:gc[0]+i*k+k+1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NW[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k-1:gc[0]+i*k+k-1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NE[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k],img[gc[0]+i*k-1:gc[0]+i*k+k-1,gc[1]+1:gc[1]+k+1]))*2-di[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k])
+        # p1=1/(1+np.exp(-p1/T))
+        # p1m=p1>np.random.rand(1)
+        p1m=p1>0
+        img[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k][p1m]=1
+        img[gc[0]+i*k:gc[0]+i*k+k,gc[1]:gc[1]+k][np.logical_not(p1m)]=-1
     for i in range(0,m-1):
         for r in range(i+1,ni):
-            for _ in range(miter):
-                img[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k]=((np.multiply(w_W[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k-1:gc[1]+(i+1)*k+k-1])+np.multiply(w_N[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r-1:gc[0]+k*r+k-1,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k])+np.multiply(w_E[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k+1:gc[1]+(i+1)*k+k+1])+np.multiply(w_S[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r+1:gc[0]+k*r+k+1,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k])+np.multiply(w_SE[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r+1:gc[0]+k*r+k+1,gc[1]+(i+1)*k+1:gc[1]+(i+1)*k+k+1])+np.multiply(w_SW[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r+1:gc[0]+k*r+k+1,gc[1]+(i+1)*k-1:gc[1]+(i+1)*k+k-1])+np.multiply(w_NW[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r-1:gc[0]+k*r+k-1,gc[1]+(i+1)*k-1:gc[1]+(i+1)*k+k-1])+np.multiply(w_NE[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r-1:gc[0]+k*r+k-1,gc[1]+(i+1)*k+1:gc[1]+(i+1)*k+k+1]))*2-di[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k])>0
+            p1=((np.multiply(w_W[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k-1:gc[1]+(i+1)*k+k-1])+np.multiply(w_N[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r-1:gc[0]+k*r+k-1,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k])+np.multiply(w_E[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k+1:gc[1]+(i+1)*k+k+1])+np.multiply(w_S[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r+1:gc[0]+k*r+k+1,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k])+np.multiply(w_SE[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r+1:gc[0]+k*r+k+1,gc[1]+(i+1)*k+1:gc[1]+(i+1)*k+k+1])+np.multiply(w_SW[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r+1:gc[0]+k*r+k+1,gc[1]+(i+1)*k-1:gc[1]+(i+1)*k+k-1])+np.multiply(w_NW[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r-1:gc[0]+k*r+k-1,gc[1]+(i+1)*k-1:gc[1]+(i+1)*k+k-1])+np.multiply(w_NE[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k],img[gc[0]+k*r-1:gc[0]+k*r+k-1,gc[1]+(i+1)*k+1:gc[1]+(i+1)*k+k+1]))*2-di[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k])
+            # p1=1/(1+np.exp(-p1/T))
+            # p1m=p1>np.random.rand(1)
+            p1m=p1>0
+            img[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k][p1m]=1
+            img[gc[0]+k*r:gc[0]+k*r+k,gc[1]+(i+1)*k:gc[1]+(i+1)*k+k][np.logical_not(p1m)]=-1
         for r in range(i+1,nj):
-            for _ in range(miter):
-                img[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k]=((np.multiply(w_W[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r-1:gc[1]+k*r+k-1])+np.multiply(w_N[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k-1:gc[0]+(i+1)*k+k-1,gc[1]+k*r:gc[1]+k*r+k])+np.multiply(w_E[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r+1:gc[1]+k*r+k+1])+np.multiply(w_S[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k+1:gc[0]+(i+1)*k+k+1,gc[1]+k*r:gc[1]+k*r+k])+np.multiply(w_SE[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k+1:gc[0]+(i+1)*k+k+1,gc[1]+k*r+1:gc[1]+k*r+k+1])+np.multiply(w_SW[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k+1:gc[0]+(i+1)*k+k+1,gc[1]+k*r-1:gc[1]+k*r+k-1])+np.multiply(w_NW[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k-1:gc[0]+(i+1)*k+k-1,gc[1]+k*r-1:gc[1]+k*r+k-1])+np.multiply(w_NE[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k-1:gc[0]+(i+1)*k+k-1,gc[1]+k*r+1:gc[1]+k*r+k+1]))*2-di[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k])>0
+            p1=((np.multiply(w_W[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r-1:gc[1]+k*r+k-1])+np.multiply(w_N[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k-1:gc[0]+(i+1)*k+k-1,gc[1]+k*r:gc[1]+k*r+k])+np.multiply(w_E[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r+1:gc[1]+k*r+k+1])+np.multiply(w_S[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k+1:gc[0]+(i+1)*k+k+1,gc[1]+k*r:gc[1]+k*r+k])+np.multiply(w_SE[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k+1:gc[0]+(i+1)*k+k+1,gc[1]+k*r+1:gc[1]+k*r+k+1])+np.multiply(w_SW[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k+1:gc[0]+(i+1)*k+k+1,gc[1]+k*r-1:gc[1]+k*r+k-1])+np.multiply(w_NW[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k-1:gc[0]+(i+1)*k+k-1,gc[1]+k*r-1:gc[1]+k*r+k-1])+np.multiply(w_NE[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k],img[gc[0]+(i+1)*k-1:gc[0]+(i+1)*k+k-1,gc[1]+k*r+1:gc[1]+k*r+k+1]))*2-di[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k])
+            # p1=1/(1+np.exp(-p1/T))
+            # p1m=p1>np.random.rand(1)
+            p1m=p1>0
+            img[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k][p1m]=1
+            img[gc[0]+(i+1)*k:gc[0]+(i+1)*k+k,gc[1]+k*r:gc[1]+k*r+k][np.logical_not(p1m)]=-1
 
     return img
 
@@ -86,68 +101,77 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
         w_SW = np.hstack((np.zeros((I, 1)), np.vstack((w_NE[1:,:-1], np.zeros((1, J - 1))))))
         di=np.sum(np.stack((w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW),0),0)
 
-    gloc=mpb_maxloc(img)
-    print('gloc %d %d'%(gloc[0],gloc[1]))
-    floc=np.argmin(np.stack((w_E,w_S,w_W,w_N,w_SE,w_SW,w_NW,w_NE))[:,gloc[0],gloc[1]])
-    floc=(gloc[0]+lij[floc][0],gloc[1]+lij[floc][1])
-    print('floc %d %d'%(floc[0],floc[1]))
+    k=3
+    wnp=w_E[:-2,:-2]+w_E[1:-1,:-2]+w_E[2:,:-2]
+    dn=di[:-2,:-2]+di[1:-1,:-2]+di[2:,:-2]
+    dp=di[:-2,1:-1]+di[1:-1,1:-1]+di[2:,1:-1]+di[:-2,2:]+di[1:-1,2:]+di[2:,2:]
+    wnp=wnp/dn+wnp/dp
+    g1=np.argmin(wnp)
+    g0=g1//(J-2)
+    g1=g1%(J-2)
+    print('gloc %d %d'%(g0,g1))
+    kn=np.mean(img[g0:g0+3,g1,:],axis=0)
+    kp=np.mean(img[g0:g0+3,g1+1:g1+3,:],axis=(0,1))
 
     bim = np.ones((I,J)).astype('int')
-    bim[gloc[0],gloc[1]] = 0
-    bim[np.sum(abs(img-img[gloc]),-1)<np.sum(abs(img-img[floc]),-1)]=0 #gloc=0
+    bim[np.sum(abs(img-kn.reshape((1,1,K))),-1)<np.sum(abs(img-kp.reshape((1,1,K))),-1)]=-1 #gloc=-1
+    for it in range(1):
+        # T=3/np.log(1+it)
+        T=.005
+        #source
+        p1=((np.multiply(w_W[g0:g0+k,g1:g1+k],bim[g0:g0+k,g1-1:g1+k-1])+np.multiply(w_N[g0:g0+k,g1:g1+k],bim[g0-1:g0+k-1,g1:g1+k])+np.multiply(w_E[g0:g0+k,g1:g1+k],bim[g0:g0+k,g1+1:g1+k+1])+np.multiply(w_S[g0:g0+k,g1:g1+k],bim[g0+1:g0+k+1,g1:g1+k])+np.multiply(w_SE[g0:g0+k,g1:g1+k],bim[g0+1:g0+k+1,g1+1:g1+k+1])+np.multiply(w_SW[g0:g0+k,g1:g1+k],bim[g0+1:g0+k+1,g1-1:g1+k-1])+np.multiply(w_NW[g0:g0+k,g1:g1+k],bim[g0-1:g0+k-1,g1-1:g1+k-1])+np.multiply(w_NE[g0:g0+k,g1:g1+k],bim[g0-1:g0+k-1,g1+1:g1+k+1])))/di[g0:g0+k,g1:g1+k]
+        p1=1/(1+np.exp(-p1/T))
+        p1m=p1>np.random.rand(1)
+        # p1m=p1>0
+        bim[g0:g0+k,g1:g1+k][p1m]=1
+        bim[g0:g0+k,g1:g1+k][np.logical_not(p1m)]=-1
+        bim=SE_it((g0,g1),bim,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
 
-    gc=((gloc[0],floc[0])[gloc[0]>floc[0]],(gloc[1],floc[1])[gloc[1]>floc[1]])
-    print('top left loc of gf %d %d'%(gc[0],gc[1]))
-    k=3
-    #source
-    for _ in range(10):
-        bim[gc[0]:gc[0]+k,gc[1]:gc[1]+k]=((np.multiply(w_W[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]:gc[0]+k,gc[1]-1:gc[1]+k-1])+np.multiply(w_N[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]-1:gc[0]+k-1,gc[1]:gc[1]+k])+np.multiply(w_E[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]:gc[0]+k,gc[1]+1:gc[1]+k+1])+np.multiply(w_S[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]+1:gc[0]+k+1,gc[1]:gc[1]+k])+np.multiply(w_SE[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]+1:gc[0]+k+1,gc[1]+1:gc[1]+k+1])+np.multiply(w_SW[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]+1:gc[0]+k+1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NW[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]-1:gc[0]+k-1,gc[1]-1:gc[1]+k-1])+np.multiply(w_NE[gc[0]:gc[0]+k,gc[1]:gc[1]+k],bim[gc[0]-1:gc[0]+k-1,gc[1]+1:gc[1]+k+1]))*2-di[gc[0]:gc[0]+k,gc[1]:gc[1]+k])>0
-    bim=SE_it(gc,bim,w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW,di)
-    # NW
-    bim=np.rot90(bim,2)
-    rg=(gc[0]+k-1,gc[1]+k-1)
-    rg=(I-rg[0]-1,J-rg[1]-1)
-    rw_E=np.rot90(w_W ,2)
-    rw_S=np.rot90(w_N ,2)
-    rw_SE=np.rot90(w_NW,2)
-    rw_NE=np.rot90(w_SW,2)
-    rw_N=np.rot90(w_S ,2)
-    rw_W=np.rot90(w_E ,2)
-    rw_NW=np.rot90(w_SE,2)
-    rw_SW=np.rot90(w_NE,2)
-    rdi=np.rot90(di ,2)
-    bim=SE_it(rg,bim,rw_E,rw_S,rw_SE,rw_NE,rw_W,rw_N,rw_NW,rw_SW,rdi)
-    bim=np.rot90(bim,2)
-    # NE
-    bim=np.rot90(bim,1)
-    rg=(gc[0]+k-1,gc[1])
-    rg=(J-rg[1]-1,rg[0])
-    rw_E=np.rot90(w_S ,1)
-    rw_S=np.rot90(w_W ,1)
-    rw_SE=np.rot90(w_SW,1)
-    rw_NE=np.rot90(w_SE,1)
-    rw_N=np.rot90(w_E ,1)
-    rw_W=np.rot90(w_N ,1)
-    rw_NW=np.rot90(w_NE,1)
-    rw_SW=np.rot90(w_NW,1)
-    rdi=np.rot90(di ,1)
-    bim=SE_it(rg,bim,rw_E,rw_S,rw_SE,rw_NE,rw_W,rw_N,rw_NW,rw_SW,rdi)
-    bim=np.rot90(bim,-1)
-    # SW
-    bim=np.rot90(bim,-1)
-    rg=(gc[0],gc[1]+k-1)
-    rg=(rg[1],I-1-rg[0])
-    rw_E=np.rot90(w_N ,-1)
-    rw_S=np.rot90(w_E ,-1)
-    rw_SE=np.rot90(w_NE,-1)
-    rw_NE=np.rot90(w_NW,-1)
-    rw_W=np.rot90(w_S ,-1)
-    rw_N=np.rot90(w_W ,-1)
-    rw_NW=np.rot90(w_SW,-1)
-    rw_SW=np.rot90(w_SE,-1)
-    rdi=np.rot90(di ,-1)
-    bim=SE_it(rg,bim,rw_E,rw_S,rw_SE,rw_NE,rw_W,rw_N,rw_NW,rw_SW,rdi)
-    bim=np.rot90(bim,1)
+        # NW
+        bim=np.rot90(bim,2)
+        rg=(g0+k-1,g1+k-1)
+        rg=(I-rg[0]-1,J-rg[1]-1)
+        rw_E=np.rot90(w_W ,2)
+        rw_S=np.rot90(w_N ,2)
+        rw_SE=np.rot90(w_NW,2)
+        rw_NE=np.rot90(w_SW,2)
+        rw_N=np.rot90(w_S ,2)
+        rw_W=np.rot90(w_E ,2)
+        rw_NW=np.rot90(w_SE,2)
+        rw_SW=np.rot90(w_NE,2)
+        rdi=np.rot90(di ,2)
+        bim=SE_it(rg,bim,rw_E,rw_S,rw_SE,rw_NE,rw_W,rw_N,rw_NW,rw_SW,rdi)
+        bim=np.rot90(bim,2)
+        # NE
+        bim=np.rot90(bim,1)
+        rg=(g0+k-1,g1)
+        rg=(J-rg[1]-1,rg[0])
+        rw_E=np.rot90(w_S ,1)
+        rw_S=np.rot90(w_W ,1)
+        rw_SE=np.rot90(w_SW,1)
+        rw_NE=np.rot90(w_SE,1)
+        rw_N=np.rot90(w_E ,1)
+        rw_W=np.rot90(w_N ,1)
+        rw_NW=np.rot90(w_NE,1)
+        rw_SW=np.rot90(w_NW,1)
+        rdi=np.rot90(di ,1)
+        bim=SE_it(rg,bim,rw_E,rw_S,rw_SE,rw_NE,rw_W,rw_N,rw_NW,rw_SW,rdi)
+        bim=np.rot90(bim,-1)
+        # SW
+        bim=np.rot90(bim,-1)
+        rg=(g0,g1+k-1)
+        rg=(rg[1],I-1-rg[0])
+        rw_E=np.rot90(w_N ,-1)
+        rw_S=np.rot90(w_E ,-1)
+        rw_SE=np.rot90(w_NE,-1)
+        rw_NE=np.rot90(w_NW,-1)
+        rw_W=np.rot90(w_S ,-1)
+        rw_N=np.rot90(w_W ,-1)
+        rw_NW=np.rot90(w_SW,-1)
+        rw_SW=np.rot90(w_SE,-1)
+        rdi=np.rot90(di ,-1)
+        bim=SE_it(rg,bim,rw_E,rw_S,rw_SE,rw_NE,rw_W,rw_N,rw_NW,rw_SW,rdi)
+        bim=np.rot90(bim,1)
 
     return bim
 
