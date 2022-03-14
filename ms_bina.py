@@ -121,7 +121,7 @@ def msimg(img, ssig=1, rsig=None, mcont=5, init_wt=1):
     ax.set_title('one part')
     plt.colorbar(orientation='horizontal')
     plt.show()
-    for it in range(1,6):
+    for it in range(1,7):
         T=round(3/(13*np.log(1+it)),3)
         logger.info('Temp %f'%T)
         # T=.05
