@@ -20,7 +20,7 @@ def msimg(img, rsig=None, nlable=3, init_wt=1):
         grad_SE = pim[2:, 2:, :] - pim[1:-1, 1:-1, :]
         grad_NE = pim[:I, 2:, :] - pim[1:-1, 1:-1,:]
         if not rsig:
-            rsig = np.sqrt(grad_m(np.hstack((grad_E**2,grad_S**2,grad_SE**2,grad_NE**2))))
+            rsig = grad_m(np.hstack((abs(grad_E),abs(grad_S),abs(grad_SE),abs(grad_NE))))
         print('rsig %f' % rsig)
         w_E = edge_weight(grad_E,rsig)
         w_E[:,-1]=0
@@ -95,6 +95,7 @@ if __name__ == "__main__":
 
     I, J, K = iph.shape
     ig = msimg(iph,nlable=3)
+    b1=(np.random.rand()<ig[:,:,0]).astype('int')
 
     ax = plt.subplot(131)
     # plt.imshow(im[:,:,0])
