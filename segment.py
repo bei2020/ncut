@@ -270,11 +270,11 @@ if __name__=="__main__":
     # with open('test/tri_centered_SMeigs5','rb') as f:
     #     w=np.load(f)
     #     v= np.load(f)
-    w,v=eigs(L,k=6,M=D,which='SM')
+    w,v=eigs(L,k=3,M=D,which='SM')
     w=w.astype(np.float)
     v=v.astype(np.float)
 
-    row=2
+    row=1
     plot_eigs(w,v,shape=(I,J),row=row)
     # plot_eigs(w[:11],v[:,:11],shape=(I,J),row=row)
     # plot_eigs(w[:7],v[:,:7],shape=(I,J),row=row)
