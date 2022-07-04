@@ -20,7 +20,7 @@ def msimg(img, rsig=None, nlable=3, init_wt=1):
         grad_SE = pim[2:, 2:, :] - pim[1:-1, 1:-1, :]
         grad_NE = pim[:I, 2:, :] - pim[1:-1, 1:-1,:]
         if not rsig:
-            rsig = grad_m(np.hstack((grad_E,grad_S,grad_SE,grad_NE)))
+            rsig = np.sqrt(grad_m(np.hstack((grad_E**2,grad_S**2,grad_SE**2,grad_NE**2))))
         print('rsig %f' % rsig)
         w_E = edge_weight(grad_E,rsig)
         w_E[:,-1]=0

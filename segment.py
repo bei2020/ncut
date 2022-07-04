@@ -22,14 +22,14 @@ def sparse_w(mtrx, emin=1e-6):
     return  np.multiply(mtrx>emin,mtrx)
 
 def edge_weight(intensity_diff,sig=0.2):
-    return np.exp(-np.sum(intensity_diff**2,-1)/sig**2)
+    return np.exp(-np.sum(intensity_diff**2,-1)/(2*sig**2))
 
 def edge_weight_g(intensity_diff,sig=0.2):
     return np.exp(-intensity_diff**2/sig**2)
 
 def grad_m(grad):
     """Return prob mean value of gradient"""
-    h, b = np.histogram(abs(grad).flatten(), bins=20)
+    h, b = np.histogram(grad.flatten(), bins=20)
     pk = np.argmax(h)
     nf = 3
     ginf = 1e-8
