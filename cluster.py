@@ -51,7 +51,8 @@ def msimg(img, rsig=None, nlable=3, init_wt=1):
     q/=np.sum(q,-1).reshape(I,J,1)
     pls=-np.ones((nlable,nlable))+2*np.diag(np.ones(nlable))
     niter=100
-    T=round(np.exp(-1/2)/(4*np.log(1+np.sqrt(nlable))),2)
+    kT=round(np.mean(w_E),2)
+    print('kT %f' % kT)
     for i in range(niter):
         q = np.dot(q, pls)
         m_E=w_E[:,:-1].reshape(I,J-1,1)*q[:,1:,:]
@@ -71,7 +72,7 @@ def msimg(img, rsig=None, nlable=3, init_wt=1):
         q[:,1:,:]+=m_W
         q[1:,1:,:]+=m_NW
         q[:-1,1:,:]+=m_SW
-        q=np.exp(q/T)
+        q=np.exp(q/kT)
         q/=np.sum(q,-1).reshape(I,J,1)
 
     return q
