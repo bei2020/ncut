@@ -2,7 +2,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib.image as mpimg
 from segment import edge_weight,grad_m
-import copy
 import os
 from time import gmtime, strftime
 
