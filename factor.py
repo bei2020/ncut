@@ -35,23 +35,20 @@ if __name__ == "__main__":
     plt.colorbar(orientation='horizontal')
     plt.show()
     print('kT %f' % kT)
-    def seq_change(s0,h,s2m,pats):
+    def seq_change(s0,h,pats):
         for i in range(s0[0],ps,2):
             for j in range(s0[1],ps,2):
-                h[i,j]=-h[i,j]
-                ch=np.sum(h.reshape(1,1,ps,ps)*ip,(2,3))
-                s2n=np.mean(ch**2)
-                pmn=(1/(1+np.exp(-(s2n-s2m)/kT))>np.random.rand()).astype('int')
-                h[i,j]=(pmn*2-1)*h[i,j]
-                if pmn:
-                    s2m=s2n
-        return h,s2m
+                h[i,j]=0
+                ch=np.sum(h.reshape(1,1,ps,ps)*ip,(2,3))*ip[:,:,i,j]
+                dq=np.mean(ch)*4
+                h[i,j]=(1/(1+np.exp(-dq/kT))>np.random.rand()).astype('int')*2-1
+        return h
 
     for _ in range(niter):
-        h,s2m=seq_change((0,0),h,s2m,ip)
-        h,s2m=seq_change((0,1),h,s2m,ip)
-        h,s2m=seq_change((1,0),h,s2m,ip)
-        h,s2m=seq_change((1,1),h,s2m,ip)
+        h=seq_change((0,0),h,ip)
+        h=seq_change((0,1),h,ip)
+        h=seq_change((1,0),h,ip)
+        h=seq_change((1,1),h,ip)
 
 
 
