@@ -5,7 +5,7 @@ import matplotlib.image as mpimg
 from segment import edge_weight
 import os
 
-def rj(xi,Sj,a1,a2,a3,a4,a5,a6,a7,a8):
+def rj(xi,a1,a2,a3,a4,a5,a6,a7,a8):
     r=np.random.rand(1)
     if r<a1[xi]:
         # xj=xi+xnn[0]
@@ -74,6 +74,10 @@ if __name__ == "__main__":
     w_NW =w_NW/wn
     w_SW =w_SW/wn
 
+    #NW,N,NE,E,SE,S,SW,W
+    xnn=((-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1),(0,-1))
+    Sj=np.zeros((I,J))
+    beta=100
     a1=w_NW
     a2=a1+w_N
     a3=a2+w_NE
@@ -82,16 +86,26 @@ if __name__ == "__main__":
     a6=a5+w_S
     a7=a6+w_SW
     a8=a7+w_W
-    #NW,N,NE,E,SE,S,SW,W
-    xnn=((-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1),(0,-1))
-    xi=(3,3)
-    Sj=np.zeros((I,J))
-    for i in range(10**2):
-        xj=rj(xi,Sj,a1,a2,a3,a4,a5,a6,a7,a8)
-        Sj[xj]+=1
-        xi=xj
+    nr=10*4
+    for _ in range(nr):
+        xi=(3,3)
+        for _ in range(10):
+            xj=rj(xi,a1,a2,a3,a4,a5,a6,a7,a8)
+            dx=(xj[0]-xi[0],xj[1]-xi[1])
+            dj=np.where(np.array(xnn)==dx,1,0)
+            dj=dj[:, 0] * dj[:, 1]
+            dj = dj.astype('bool')
+            wj=np.array((w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW))[dj][0][xi]
+            aj=1/(1+np.exp(-2*beta*wj*np.sign(Sj[xi])))
+            Sj[xj]=Sj[xj]+(aj>np.random.rand(1)).astype('int')*2-1
+            xi=xj
+    Sj/=nr
 
-    ax = plt.subplot(111)
+    ax = plt.subplot(121)
+    plt.imshow(img)
+    ax.set_title('corr of (3,3)')
+    plt.colorbar(orientation='horizontal')
+    ax = plt.subplot(122)
     plt.imshow(Sj)
     ax.set_title('corr of (3,3)')
     plt.colorbar(orientation='horizontal')
