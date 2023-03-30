@@ -87,17 +87,17 @@ if __name__ == "__main__":
     a7=a6+w_SW
     a8=a7+w_W
     nr=10*4
+    Sjp=np.zeros((I+2,J+2))
     for _ in range(nr):
         xi=(3,3)
         for _ in range(10):
             xj=rj(xi,a1,a2,a3,a4,a5,a6,a7,a8)
-            dx=(xj[0]-xi[0],xj[1]-xi[1])
-            dj=np.where(np.array(xnn)==dx,1,0)
-            dj=dj[:, 0] * dj[:, 1]
-            dj = dj.astype('bool')
-            wj=np.array((w_E,w_S,w_SE,w_NE,w_W,w_N,w_NW,w_SW))[dj][0][xi]
-            aj=1/(1+np.exp(-2*beta*wj*np.sign(Sj[xi])))
+            dq=w_E[xj]*np.sign(Sjp[xj[0],xj[1]+1])+w_S[xj]*np.sign(Sjp[xj[0]+1,xj[1]])+w_SE[xj]*np.sign(Sjp[xj[0]+1,xj[1]+1])
+            +w_NE[xj]*np.sign(Sjp[xj[0]-1,xj[1]+1])+w_W[xj]*np.sign(Sjp[xj[0],xj[1]-1])+w_N[xj]*np.sign(Sjp[xj[0]-1,xj[1]])
+            +w_NW[xj]*np.sign(Sjp[xj[0]-1,xj[1]-1])+w_SW[xj]*np.sign(Sjp[xj[0]+1,xj[1]-1])
+            aj=1/(1+np.exp(-2*beta*dq))
             Sj[xj]=Sj[xj]+(aj>np.random.rand(1)).astype('int')*2-1
+            Sjp[1:-1,1:-1]=Sj
             xi=xj
     Sj/=nr
 
