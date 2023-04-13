@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     #NW,N,NE,E,SE,S,SW,W
     xnn=((-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1),(0,-1))
-    Sj=np.zeros((I,J))
+    Sj=np.random.rand(I,J)
     beta=100
     a1=w_NW
     a2=a1+w_N
@@ -92,10 +92,7 @@ if __name__ == "__main__":
         xi=(3,3)
         for _ in range(10):
             xj=rj(xi,a1,a2,a3,a4,a5,a6,a7,a8)
-            dq=w_E[xj]*np.sign(Sjp[xj[0],xj[1]+1])+w_S[xj]*np.sign(Sjp[xj[0]+1,xj[1]])+w_SE[xj]*np.sign(Sjp[xj[0]+1,xj[1]+1])
-            +w_NE[xj]*np.sign(Sjp[xj[0]-1,xj[1]+1])+w_W[xj]*np.sign(Sjp[xj[0],xj[1]-1])+w_N[xj]*np.sign(Sjp[xj[0]-1,xj[1]])
-            +w_NW[xj]*np.sign(Sjp[xj[0]-1,xj[1]-1])+w_SW[xj]*np.sign(Sjp[xj[0]+1,xj[1]-1])
-            aj=1/(1+np.exp(-2*beta*dq))
+            aj=1/(1+np.exp(-beta*Sj[xj]))
             Sj[xj]=Sj[xj]+(aj>np.random.rand(1)).astype('int')*2-1
             Sjp[1:-1,1:-1]=Sj
             xi=xj
