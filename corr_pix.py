@@ -76,7 +76,6 @@ if __name__ == "__main__":
 
     #NW,N,NE,E,SE,S,SW,W
     xnn=((-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1),(0,-1))
-    Sj=np.random.rand(I,J)
     beta=100
     a1=w_NW
     a2=a1+w_N
@@ -87,23 +86,24 @@ if __name__ == "__main__":
     a7=a6+w_SW
     a8=a7+w_W
     nr=10*4
-    Sjp=np.zeros((I+2,J+2))
+    # nr=10
+    sd=20
+    x=[None]*sd
+    Sij=np.zeros((I,J,I,J))
     for _ in range(nr):
-        xi=(3,3)
-        for _ in range(10):
-            xj=rj(xi,a1,a2,a3,a4,a5,a6,a7,a8)
-            aj=1/(1+np.exp(-beta*Sj[xj]))
-            Sj[xj]=Sj[xj]+(aj>np.random.rand(1)).astype('int')*2-1
-            Sjp[1:-1,1:-1]=Sj
-            xi=xj
-    Sj/=nr
+        x[0]=(3,3)
+        for s in range(sd-1):
+            x[s+1]=rj(x[s],a1,a2,a3,a4,a5,a6,a7,a8)
+        for i in x:
+            Sij[i[0],i[1]][np.array(x[1:])[:,0],np.array(x[1:])[:,1]]+=1
+    Sij/=nr
 
     ax = plt.subplot(121)
     plt.imshow(img)
     ax.set_title('corr of (3,3)')
     plt.colorbar(orientation='horizontal')
     ax = plt.subplot(122)
-    plt.imshow(Sj)
+    plt.imshow(Sij[x[0]])
     ax.set_title('corr of (3,3)')
     plt.colorbar(orientation='horizontal')
 
