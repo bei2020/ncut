@@ -40,11 +40,6 @@ if __name__ == "__main__":
     w_NW = np.hstack((np.zeros((I, 1)),np.vstack((np.zeros((1, J - 1)), w_SE[:-1,:-1]))))
     w_SW = np.hstack((np.zeros((I, 1)), np.vstack((w_NE[1:,:-1], np.zeros((1, J - 1))))))
 
-    Si=np.zeros((I,J))
-    Si[1,1]=1
-    Si[-1,1]=-1
-    t=10
-    # t=2
     p_NW=np.zeros((I,J))
     p_N=np.zeros((I,J))
     p_NE=np.zeros((I,J))
@@ -53,6 +48,9 @@ if __name__ == "__main__":
     p_S=np.zeros((I,J))
     p_SW=np.zeros((I,J))
     p_W=np.zeros((I,J))
+    Si=np.random.randint(-1,1,size=(I,J))
+    Si[Si==0]=1
+    t=100
     for _ in range(t):
         r=np.random.rand(I,J)
         p_NW=(w_NW>r).astype('int')
@@ -63,14 +61,22 @@ if __name__ == "__main__":
         p_S =(w_S >r).astype('int')
         p_SW=(w_SW>r).astype('int')
         p_W =(w_W >r).astype('int')
-        Si[:,:-1]=p_W[:,1:]*Si[:,1:]
-        Si[1:,:-1]+=p_SW[:-1,1:]*Si[:-1,1:]
-        Si[:-1,:]+=p_N[1:,:]*Si[1:,:]
-        Si[:-1,:-1]+=p_NW[1:,1:]*Si[1:,1:]
-        Si[1:,:]+=   p_S[:-1,:]*Si[:-1,:]
-        Si[:,1:]+=   p_E[:,:-1]*Si[:,:-1]
-        Si[1:,1:]+=  p_SE[:-1,:-1]*Si[:-1,:-1]
-        Si[:-1,1:]+= p_NE[1:,:-1]*Si[1:,:-1]
+        m_W =p_W[:,1:]*Si[:,1:]
+        m_SW=p_SW[:-1,1:]*Si[:-1,1:]
+        m_N =p_N[1:,:]*Si[1:,:]
+        m_NW=p_NW[1:,1:]*Si[1:,1:]
+        m_S =p_S[:-1,:]*Si[:-1,:]
+        m_E =p_E[:,:-1]*Si[:,:-1]
+        m_SE=p_SE[:-1,:-1]*Si[:-1,:-1]
+        m_NE=p_NE[1:,:-1]*Si[1:,:-1]
+        Si[:,:-1]=   m_W
+        Si[1:,:-1]+= m_SW
+        Si[:-1,:]+=  m_N
+        Si[:-1,:-1]+=m_NW
+        Si[1:,:]+=   m_S
+        Si[:,1:]+=   m_E
+        Si[1:,1:]+=  m_SE
+        Si[:-1,1:]+= m_NE
         Si[Si>0]=1
         Si[Si<0]=-1
 
