@@ -85,18 +85,20 @@ if __name__ == "__main__":
     a6=a5+w_S
     a7=a6+w_SW
     a8=a7+w_W
-    nr=10*4
-    # nr=10
+    # nr=10*4
+    nr=10
     sd=20
     x=[None]*sd
     Sij=np.zeros((I,J,I,J))
+    Np=np.zeros((I,J))
     for _ in range(nr):
         x[0]=(3,3)
         for s in range(sd-1):
             x[s+1]=rj(x[s],a1,a2,a3,a4,a5,a6,a7,a8)
-        for i in x:
-            Sij[i[0],i[1]][np.array(x[1:])[:,0],np.array(x[1:])[:,1]]+=1
-    Sij/=nr
+        for i in range(sd-1):
+            Sij[x[i][0],x[i][1]][np.array(x[i+1:])[:,0],np.array(x[i+1:])[:,1]]+=1
+        Np[np.array(x[1:-1])[:,0],np.array(x[1:-1])[:,1]]+=1
+    Sij/=(nr+Np).reshape(I,J,1,1)
 
     ax = plt.subplot(121)
     plt.imshow(img)
