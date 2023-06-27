@@ -5,31 +5,6 @@ import matplotlib.image as mpimg
 from segment import edge_weight
 import os
 
-def rj(xi,a1,a2,a3,a4,a5,a6,a7,a8):
-    r=np.random.rand(1)
-    if r<a1[xi]:
-        # xj=xi+xnn[0]
-        xj=(xi[0]+xnn[0][0],xi[1]+xnn[0][1])
-    elif r<a2[xi]:
-        xj=(xi[0]+xnn[1][0],xi[1]+xnn[1][1])
-    elif r<a3[xi]:
-        xj=(xi[0]+xnn[2][0],xi[1]+xnn[2][1])
-    elif r<a4[xi]:
-        xj=(xi[0]+xnn[3][0],xi[1]+xnn[3][1])
-    elif r<a5[xi]:
-        xj=(xi[0]+xnn[4][0],xi[1]+xnn[4][1])
-    elif r<a6[xi]:
-        xj=(xi[0]+xnn[5][0],xi[1]+xnn[5][1])
-    elif r<a7[xi]:
-        xj=(xi[0]+xnn[6][0],xi[1]+xnn[6][1])
-    elif r<a8[xi]:
-        xj=(xi[0]+xnn[7][0],xi[1]+xnn[7][1])
-    else:
-        print(r)
-        print(a1[xi],a2[xi],a3[xi],a4[xi],a5[xi],a6[xi],a7[xi],a8[xi])
-
-    return xj
-
 
 if __name__ == "__main__":
 
@@ -75,28 +50,37 @@ if __name__ == "__main__":
     w_NW =w_NW/wn
     w_SW =w_SW/wn
 
-    #NW,N,NE,E,SE,S,SW,W
-    xnn=((-1,-1),(-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1),(0,-1))
-    beta=100
-    a1=w_NW
-    a2=a1+w_N
-    a3=a2+w_NE
-    a4=a3+w_E
-    a5=a4+w_SE
-    a6=a5+w_S
-    a7=a6+w_SW
-    a8=a7+w_W
+    beta=1
 
+    xt=(3,3)
+    m=100
+    Sij=np.zeros((I,J))
+    Si=np.random.randint(-1,1,size=(I,J))
+    Si[Si==0]=1
+    pSi=np.zeros((I+2,J+2))
+    pSi[1:-1,1:-1]=Si
+    Ebt=0
+    # Em=[None]*m
+    for d in range(m):
+        for i in range(I):
+            for j in range(J):
+                hi=w_E[i,j]*pSi[i+1,j+2]+ w_S[i,j]*pSi[i+2,j+1]+w_W[i,j]*pSi[i+1,j]+w_N[i,j]*pSi[i,j+1]+\
+                   w_SE[i,j]*pSi[i+2,j+2]+w_SW[i,j]*pSi[i+2,j]+w_NW[i,j]*pSi[i,j]+w_NE[i,j]*pSi[i,j+2]
+                pSi[1+i,1+j]=((1/(1+np.exp(-beta*hi)))>np.random.rand(1)).astype('int')*2-1
+        Si=pSi[1:-1,1:-1]
+        sx=(Si[xt[0],xt[1]]==Si).astype('int')
+        Sij+=sx
+        E=np.zeros((I,J))
+        E[1:,:-1] =w_NE[1:,:-1]*Si[:-1,1:]
+        E[:,:-1]+=w_E[:,:-1]*Si[:,1:]
+        E[:-1,:-1]+=w_SE[:-1,:-1]*Si[1:,1:]
+        E[:-1,:] +=w_S[:-1]*Si[1:,:]
+        E=np.sum(Si*E)/(I*J)
+        # Em[d]=E
+        Ebt+=E
 
-    xj=(3,3)
-    m=1000
-    Sj=np.zeros((I,J))
-    for _ in range(m):
-        xj=rj(xj,a1,a2,a3,a4,a5,a6,a7,a8)
-        Sj[xj]+=1
-    print(np.sum(Sj))
-
-    # Sj/=m
+    Sij/=m
+    Ebt/=m
 
 
     # # nr=10*4
@@ -120,8 +104,8 @@ if __name__ == "__main__":
     plt.colorbar(orientation='horizontal')
     ax = plt.subplot(122)
     # plt.imshow(Sij[x[0]])
-    plt.imshow(Sj)
-    ax.set_title('corr of %s'%('i'))
+    plt.imshow(Sij)
+    ax.set_title('corr of %s'%('xt'))
     plt.colorbar(orientation='horizontal')
 
     plt.show()
