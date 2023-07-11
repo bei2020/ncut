@@ -88,29 +88,36 @@ if __name__ == "__main__":
     a8=a7+w_W
 
 
-    xj=(3,3)
-    m=1000
-    Sj=np.zeros((I,J))
+    m=100
+    xi=(3,3)
+    Sij=np.zeros((I,J,I,J))
+    S2=np.zeros((I,J,I,J))
+    xj=rj(xi,a1,a2,a3,a4,a5,a6,a7,a8)
+    Sij[xi[0],xi[1],xj[0],xj[1]]+=1
+    xi_1=xi
+    xi=xj
     for _ in range(m):
-        xj=rj(xj,a1,a2,a3,a4,a5,a6,a7,a8)
-        Sj[xj]+=1
-    print(np.sum(Sj))
-
-    # Sj/=m
+        xj=rj(xi,a1,a2,a3,a4,a5,a6,a7,a8)
+        Sij[xi[0],xi[1],xj[0],xj[1]]+=1
+        S2[xi_1[0],xi_1[1],xj[0],xj[1]]+=1
+        xi_1=xi
+        xi=xj
+    print(np.sum(Sij))
+    print(np.sum(S2))
+    ni=np.sum(Sij,axis=(2,3))
+    gij=(Sij+S2)/ni.reshape((I,J,1,1))
 
 
     # # nr=10*4
     # nr=10
     # sd=20
     # x=[None]*sd
-    # Sij=np.zeros((I,J,I,J))
     # Np=np.zeros((I,J))
     # for _ in range(nr):
     #     x[0]=(3,3)
     #     for s in range(sd-1):
     #         x[s+1]=rj(x[s],a1,a2,a3,a4,a5,a6,a7,a8)
     #     for i in range(sd-1):
-    #         Sij[x[i][0],x[i][1]][np.array(x[i+1:])[:,0],np.array(x[i+1:])[:,1]]+=1
     #     Np[np.array(x[1:-1])[:,0],np.array(x[1:-1])[:,1]]+=1
     # Sij/=(nr+Np).reshape(I,J,1,1)
 
@@ -119,9 +126,9 @@ if __name__ == "__main__":
     ax.set_title('img')
     plt.colorbar(orientation='horizontal')
     ax = plt.subplot(122)
-    # plt.imshow(Sij[x[0]])
-    plt.imshow(Sj)
-    ax.set_title('corr of %s'%('i'))
+    plt.imshow(Sij[xi[0],xi[1]])
+    # plt.imshow(Sj)
+    ax.set_title('corr of %d,%d'%(xi))
     plt.colorbar(orientation='horizontal')
 
     plt.show()
